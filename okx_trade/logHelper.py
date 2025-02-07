@@ -1,13 +1,10 @@
-import logging;
+import time
+import pandas as pd
+import numpy as np
+from okx.MarketData import MarketAPI
 
-def loggerInit(logname:str,loglevel:logging._Level)->logging.Logger:
-    logging.basicConfig(filename=logname,
-                    filemode='a',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=loglevel)
-
-    logging.info("Running Urban Planning")
-    logger = logging.getLogger()
-    return logger
-    
+# OKX API 配置
+API_KEY = 'your_api_key'
+SECRET_KEY = 'your_secret_key'
+PASSPHRASE = 'your_passphrase'
+FLAG = '0'  # 0: 实盘, 1: 模拟盘
