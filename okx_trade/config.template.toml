@@ -1,0 +1,40 @@
+# template config file
+
+[api]
+key = "your OKX api key"
+secret = "your OKX api secret"
+passphase = "your OKX api passphase"
+base_url = 'https://www.okx.com'
+
+#行情监控配置
+[symbols]
+    [symbols.BTC_USDT_SWAP]
+        instId = "BTC_USDT_SWAP" # 品种类型 = BTC 合约
+        K_interval = "4H" # 使用 4H k线
+        bias = 0.5  # 偏置，理解为价格突破上轨后，还要再上涨0.5个标准差才会真正下单
+    [symbols.ETH_USDT_SWAP]
+        instId = "ETH_USDT_SWAP" # 品种类型 = ETH 合约
+        K_interval = "4H" 
+        bias = 0.5  
+    [symbols.SOL_USDT_SWAP]
+        instId = "SOL_USDT_SWAP" # 品种类型 = SOL 合约
+        K_interval = "4H" 
+        bias = 0.25
+
+[indicators]
+    [indicators.bollinger_bands]
+        length = 20
+        multipler = 2
+        ma_type = "SMA"
+
+[email]
+from_email = "sender@163.com"
+to_email = ["recv1@example.com", "recv2@example.com"]
+smtp_server = "smtp.163.com"
+smtp_port = 465
+password = "your_email_password"
+auth_163 = "your auth code for 163 mailbox"
+
+[common]  
+interval = 60  # 监控间隔（秒）
+flag = "0"  # live trading: 0, demo trading: 1

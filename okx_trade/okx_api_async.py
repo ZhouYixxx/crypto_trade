@@ -5,16 +5,18 @@ import hmac
 import base64
 import json
 from urllib.parse import urlencode
-import settings
-from logHelper import Logger
+from CommonHelper import Logger
+from CommonHelper import Util
 
 
-# OKX API配置
-_API_KEY = settings.API_KEY
-_SECRET_KEY = settings.SECRET_KEY
-_PASSPHRASE = settings.API_PASSPHRASE
-_BASE_URL = "https://www.okx.com"
 logger = Logger(__name__).get_logger()
+Config = Util.get_config()
+_BASE_URL = Config["api"]["base_url"]
+# OKX API配置
+_API_KEY = Config["api"]["key"]
+_SECRET_KEY = Config["api"]["secret"]
+_PASSPHRASE = Config["api"]["passphase"]
+
 
 class OKXAPI_Async_Wrapper:
 
@@ -38,7 +40,7 @@ class OKXAPI_Async_Wrapper:
         timestamp = str(int(time.time()))
         signature = OKXAPI_Async_Wrapper.__generate_signature(_SECRET_KEY, timestamp, method, requestPath)
 
-        return await OKXAPI_Async_Wrapper._http_get(url, timestamp, signature, method)
+        return await OKXAPI_Async_Wrapper.__http_request(url, timestamp, signature, method)
 
 
     @staticmethod
@@ -59,7 +61,7 @@ class OKXAPI_Async_Wrapper:
         timestamp = str(int(time.time()))
         signature = OKXAPI_Async_Wrapper.__generate_signature(_SECRET_KEY, timestamp, method, requestPath)
 
-        return await OKXAPI_Async_Wrapper._http_get(url, timestamp, signature, method)
+        return await OKXAPI_Async_Wrapper.__http_request(url, timestamp, signature, method)
 
 
     @staticmethod
