@@ -3,7 +3,7 @@ import okx_api_async
 import time
 import asyncio
 import common_helper
-import crypto_trader
+from crypto_trader import crypto_trader
 import dataclass
 
 
@@ -28,11 +28,15 @@ async def main():
     sol_config = config.symbols["SOL-USDT-SWAP"]
     sol_trader = crypto_trader("SOL-USDT-SWAP", sol_config.K_interval, sol_config.bias, config.common.interval, config.common.flag)
 
+    pnut_config = config.symbols["PNUT-USDT-SWAP"]
+    pnut_trader = crypto_trader("PNUT-USDT-SWAP", pnut_config.K_interval, pnut_config.bias, config.common.interval, config.common.flag)
+
     await asyncio.gather(
-        # 每个trader之间延迟 10秒 启动
+        # 每个trader之间延迟 5秒 启动
         run_trader_with_delay(btc_trader, 0),
-        run_trader_with_delay(eth_trader, 10),
-        run_trader_with_delay(sol_trader, 20),
+        run_trader_with_delay(eth_trader, 5),
+        run_trader_with_delay(sol_trader, 10),
+        run_trader_with_delay(pnut_trader, 15),
     )
 
 async def run_trader_with_delay(trader:crypto_trader, delay:int):

@@ -5,18 +5,18 @@ import hmac
 import base64
 import json
 from urllib.parse import urlencode
-from CommonHelper import Logger
-from CommonHelper import Util
+from common_helper import Logger
+from common_helper import Util
+from dataclass import ApiConfig
 
 
 logger = Logger(__name__).get_logger()
-Config = Util.get_config()
-_BASE_URL = Config["api"]["base_url"]
+config = Util.load_config()
 # OKX API配置
-_API_KEY = Config["api"]["key"]
-_SECRET_KEY = Config["api"]["secret"]
-_PASSPHRASE = Config["api"]["passphase"]
-
+_API_KEY = config.api.key
+_SECRET_KEY = config.api.secret
+_PASSPHRASE = config.api.passphase
+_BASE_URL = config.api.base_url
 
 class OKXAPI_Async_Wrapper:
 
@@ -33,6 +33,7 @@ class OKXAPI_Async_Wrapper:
             "bar": interval,
             "limit": limit
         }
+        
         requestPath = f"{endpoint}?{urlencode(params)}"
         url = f"{_BASE_URL}{requestPath}"
 
@@ -103,8 +104,8 @@ class OKXAPI_Async_Wrapper:
     # 生成签名
     def __generate_signature(secret_key, timestamp, method, requestPath, body = ''):
         message = timestamp + method + requestPath + body
-        # message = message.encode('utf-8')
-        hmac_key = hmac.new(secret_key.encode('utf-8'), message, digestmod='sha256')
+        message_bytes = message.encode('utf-8')
+        hmac_key = hmac.new(secret_key.encode('utf-8'), message_bytes, digestmod='sha256')
         return base64.b64encode(hmac_key.digest()).decode('utf-8')
     
 

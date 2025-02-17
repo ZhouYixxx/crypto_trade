@@ -8,18 +8,22 @@ base_url = 'https://www.okx.com'
 
 #行情监控配置
 [symbols]
-    [symbols.BTC_USDT_SWAP]
-        instId = "BTC_USDT_SWAP" # 品种类型 = BTC 合约
+    [symbols.BTC-USDT-SWAP]
+        instId = "BTC-USDT-SWAP" # 品种类型 = BTC 合约
         K_interval = "4H" # 使用 4H k线
         bias = 0.5  # 偏置，理解为价格突破上轨后，还要再上涨0.5个标准差才会真正下单
-    [symbols.ETH_USDT_SWAP]
-        instId = "ETH_USDT_SWAP" # 品种类型 = ETH 合约
+    [symbols.ETH-USDT-SWAP]
+        instId = "ETH-USDT-SWAP" # 品种类型 = ETH 合约
         K_interval = "4H" 
         bias = 0.5  
-    [symbols.SOL_USDT_SWAP]
-        instId = "SOL_USDT_SWAP" # 品种类型 = SOL 合约
+    [symbols.SOL-USDT-SWAP]
+        instId = "SOL-USDT-SWAP" # 品种类型 = SOL 合约
         K_interval = "4H" 
         bias = 0.25
+    [symbols.PNUT-USDT-SWAP]
+        instId = "PNUT-USDT-SWAP" # 品种类型 = PNUT 合约
+        K_interval = "4H" 
+        bias = 0.5
 
 [indicators]
     [indicators.bollinger_bands]

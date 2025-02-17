@@ -2,7 +2,8 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 import toml
-from typing import Dict, Any
+import json
+from datetime import datetime
 
 import smtplib
 from email.mime.text import MIMEText
@@ -11,9 +12,17 @@ from email.mime.multipart import MIMEMultipart
 import dataclass
 
 class Logger:
+    _logger_instance = None
+    
     def __init__(self, name, log_dir='logs', level=logging.INFO):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
+
+        if Logger._logger_instance is not None:
+            # 如果logger实例已经创建过，直接返回已存在的logger
+            self.logger = Logger._logger_instance
+            return
+        
         # 创建一个logger
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
@@ -40,6 +49,8 @@ class Logger:
         self.logger.addHandler(file_handler)
         # self.logger.addHandler(console_handler)
 
+        Logger._logger_instance = self.logger
+
     def get_logger(self):
         return self.logger
 
@@ -58,8 +69,10 @@ class Util:
                 server.login(sender_email, sender_password)
                 server.sendmail(sender_email, receiver_emails, msg.as_string())
                 logger.info("send email successfully")
+                return True
         except Exception as e:
-            print(f"Error sending email: {e}")
+            logger.error(f"Error sending email: {e}")
+            return False
 
 
     @staticmethod
@@ -113,4 +126,17 @@ class Util:
             email=email_config,
             common=common_config
         )
+    
+
+    def read_last_send_time(instid):
+        try:
+            with open('last_send_time.json', 'r') as f:
+                data = json.load(f)
+                return datetime.strptime(data[instid], "%Y-%m-%d %H:%M:%S")
+        except (FileNotFoundError, KeyError):
+            return None
+
+    def update_last_send_time(instid):
+        with open('last_send_time.json', 'w') as f:
+            json.dump({instid: datetime.now().strftime("%Y-%m-%d %H:%M:%S")}, f)
     

@@ -28,20 +28,14 @@ class market_monitor:
         self.multipier = multipier
         self.logger = Logger(__name__).get_logger()
 
-    # 提醒方式（这里以打印到控制台为例，你可以替换为邮件或Telegram通知）
-    def _send_price_alert(self, message):
-        Util.send_email_outlook(message)  # 替换为你的提醒逻辑，例如发送邮件或Telegram消息
-
 
     async def price_triggered(self):
-        df = await self._get_candles(self.inst_id, self.interval)
+        df = await self._get_candles()
         if df is not None:
             # 使用 TA-Lib 计算布林带
             df = self._calculate_bollinger_bands(df, self.bb_length, self.multipier)
             # 监控价格突破
-            triggered, dir, curr_price, band_price = self._monitor_breakout(df)
-            return triggered, dir, curr_price, band_price
-
+            return self._monitor_breakout(df)
     # 获取K线数据
     async def _get_candles(self, limit=30):
         # response = market_data_api.get_candlesticks(instId=INST_ID, bar=interval, limit=limit)
@@ -58,7 +52,7 @@ class market_monitor:
 
 
     # 使用 TA-Lib 计算布林带
-    def _calculate_bollinger_bands(df, length, multiplier):
+    def _calculate_bollinger_bands(self, df, length, multiplier):
         close_prices = df['close'].values
         upper, middle, lower = talib.BBANDS(
             close_prices[::-1],  # 收盘价数据
@@ -85,10 +79,9 @@ class market_monitor:
             msg = f"{self.inst_id} 价格突破{self.interval} 布林带上轨! 最新价: {round(latest_close,1)}, 上轨: {round(upper_band,1)}"
             triggerd = True
             self.logger.info(msg)
-            self._send_price_alert(msg)
-            return triggerd, "up", latest_close, upper_band
+            return triggerd, "up", latest_close, upper_band, msg
         elif latest_close < (lower_band - delta):
             msg = f"{self.inst_id} 价格跌破{self.interval} 布林带下轨! 最新价: {round(latest_close,1)}, 下轨: {round(lower_band,1)}"
             triggerd = True
-            self._send_price_alert()
-            return triggerd, "down", latest_close, lower_band
+            return triggerd, "down", latest_close, lower_band, msg
+        return False, "", 0,0, ""
