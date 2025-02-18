@@ -13,7 +13,7 @@ import dataclass
 
 class Logger:
     _logger_instance = None
-    
+
     def __init__(self, name, log_dir='logs', level=logging.INFO):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
@@ -128,15 +128,25 @@ class Util:
         )
     
 
-    def read_last_send_time(instid):
+    def read_last_send_time(instid, filename='last_send_time.json'):
         try:
-            with open('last_send_time.json', 'r') as f:
+            with open(filename, 'r') as f:
                 data = json.load(f)
                 return datetime.strptime(data[instid], "%Y-%m-%d %H:%M:%S")
         except (FileNotFoundError, KeyError):
             return None
 
-    def update_last_send_time(instid):
-        with open('last_send_time.json', 'w') as f:
-            json.dump({instid: datetime.now().strftime("%Y-%m-%d %H:%M:%S")}, f)
+    def update_last_send_time(instid, filename='last_send_time.json'):
+        try:
+            with open(filename, 'r+') as f:
+                data = json.load(f)
+                data[instid] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.seek(0)  
+                json.dump(data, f, indent=4)
+                f.truncate()  # 确保原有多余的内容被截断
+        except (FileNotFoundError, json.JSONDecodeError):
+            # 如果文件不存在或者格式错误，重新创建文件
+            data = {instid: datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+            with open(filename, 'w') as f:
+                json.dump(data, f, indent=4)
     

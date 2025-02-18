@@ -20,16 +20,16 @@ async def main():
     config = common_helper.Util.load_config()
     
     btc_config = config.symbols["BTC-USDT-SWAP"]
-    btc_trader = crypto_trader("BTC-USDT-SWAP", btc_config.K_interval, btc_config.bias, config.common.interval, config.common.flag)
+    btc_trader = crypto_trader(btc_config, config.email, config.indicators.bollinger_bands, config.common)
 
     eth_config = config.symbols["ETH-USDT-SWAP"]
-    eth_trader = crypto_trader("ETH-USDT-SWAP", eth_config.K_interval, eth_config.bias, config.common.interval, config.common.flag)
-    
+    eth_trader = crypto_trader(eth_config, config.email, config.indicators.bollinger_bands, config.common)
+
     sol_config = config.symbols["SOL-USDT-SWAP"]
-    sol_trader = crypto_trader("SOL-USDT-SWAP", sol_config.K_interval, sol_config.bias, config.common.interval, config.common.flag)
+    sol_trader = crypto_trader(sol_config, config.email, config.indicators.bollinger_bands, config.common)
 
     pnut_config = config.symbols["PNUT-USDT-SWAP"]
-    pnut_trader = crypto_trader("PNUT-USDT-SWAP", pnut_config.K_interval, pnut_config.bias, config.common.interval, config.common.flag)
+    pnut_trader = crypto_trader(pnut_config, config.email, config.indicators.bollinger_bands, config.common)
 
     await asyncio.gather(
         # 每个trader之间延迟 5秒 启动
@@ -44,4 +44,8 @@ async def run_trader_with_delay(trader:crypto_trader, delay:int):
     await trader.run()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger = common_helper.Logger(__name__).get_logger()
+        logger.error(f"Error: {e}")
