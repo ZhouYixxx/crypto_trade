@@ -76,12 +76,12 @@ class market_monitor:
         triggerd = False
         delta = (upper_band - lower_band) / 4 * self.bias
         if latest_close > (upper_band + delta):
-            msg = f"{self.inst_id} 价格突破{self.interval} 布林带上轨! 最新价: {round(latest_close,1)}, 上轨: {round(upper_band,1)}"
+            msg = f"{self.inst_id} 价格突破{self.interval} 布林带上轨! 最新价: {Util.price2str(latest_close)}, 上轨: {Util.price2str(upper_band)}"
             triggerd = True
             self.logger.info(msg)
             return triggerd, "up", latest_close, upper_band, msg
         elif latest_close < (lower_band - delta):
-            msg = f"{self.inst_id} 价格跌破{self.interval} 布林带下轨! 最新价: {round(latest_close,1)}, 下轨: {round(lower_band,1)}"
+            msg = f"{self.inst_id} 价格跌破{self.interval} 布林带下轨! 最新价: {Util.price2str(latest_close)}, 下轨: {Util.price2str(lower_band)}"
             triggerd = True
             return triggerd, "down", latest_close, lower_band, msg
         return False, "", 0,0, ""

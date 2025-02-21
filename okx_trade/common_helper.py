@@ -3,6 +3,7 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 import toml
 import json
+import math
 from datetime import datetime
 
 import smtplib
@@ -150,3 +151,14 @@ class Util:
             with open(filename, 'w') as f:
                 json.dump(data, f, indent=4)
     
+    @staticmethod
+    def price2str(price)->str:
+        price = float(price)
+        if price < 1:
+            return round(price, 4)
+        elif price < 100:
+            return round(price, 3)
+        elif price < 10000:
+            return round(price, 2)
+        else:
+            return round(price, 1)
