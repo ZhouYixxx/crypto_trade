@@ -1,13 +1,10 @@
 import aiohttp
-import asyncio
 import time
 import hmac
 import base64
-import json
 from urllib.parse import urlencode
 from common_helper import Logger
 from common_helper import Util
-from dataclass import ApiConfig
 
 
 logger = Logger(__name__).get_logger()
