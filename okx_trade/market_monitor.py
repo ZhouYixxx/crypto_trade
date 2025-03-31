@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import talib
 from okx_api_async import OKXAPI_Async_Wrapper 
+import datetime as dt
 
 # import asyncio
 
@@ -24,12 +25,16 @@ class market_monitor:
         self.inst_id = inst_id
         self.interval = interval
         self.bias = bias
+        self.inst_ticker_his = None # 记录当前币种过去半年历史价位
+        self.trade_date =  dt.datetime.today().strftime('%Y-%m-%d')
         self.bb_length = bb_length
         self.multipier = multipier
         self.logger = Logger(__name__).get_logger()
 
 
     async def price_triggered(self):
+        # await self._update_ticker_his()
+        
         df = await self._get_candles()
         if df is not None:
             # 使用 TA-Lib 计算布林带
@@ -85,3 +90,22 @@ class market_monitor:
             triggerd = True
             return triggerd, "down", latest_close, lower_band, msg
         return False, "", 0,0, ""
+
+    # 获取历史K线数据，每日执行一次
+    async def _update_ticker_his(self):
+        need_update =  self.inst_ticker_his is None or self.trade_date != dt.datetime.today().strftime('%Y-%m-%d')
+        if need_update != True:
+            return
+        response = await OKXAPI_Async_Wrapper.get_candlesticks_async(instId=self.inst_id, interval="1D", limit=180)
+        if response is None or response['code'] != '0':
+            self.logger.warn("Failed to get history ticker data ...")
+            return
+        data = response['data']
+        df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'volCcy', 'volCcyQuote', 'confirm'])
+        df['close'] = df['close'].astype(float)
+        # curr_price = df['close'].values[0]
+        df['timestamp'] = pd.to_datetime(df['timestamp'].astype(np.int64), unit='ms')
+        df = df.sort_values(['close', 'timestamp'], ascending=[True, False]) #按收盘价升序排列，后按时间降序排列
+        self.inst_ticker_his = df
+        # ticker = df.loc[df['close'] >= some_value]
+

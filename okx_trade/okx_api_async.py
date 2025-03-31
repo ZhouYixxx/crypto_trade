@@ -37,9 +37,32 @@ class OKXAPI_Async_Wrapper:
         # 生成签名
         timestamp = str(int(time.time()))
         signature = OKXAPI_Async_Wrapper.__generate_signature(_SECRET_KEY, timestamp, method, requestPath)
-
         return await OKXAPI_Async_Wrapper.__http_request(url, timestamp, signature, method)
 
+
+    @staticmethod
+    async def get_history_candles_async(instId, after, before, interval, limit = 100):
+        """
+        获取K线数据
+        """
+
+        endpoint = "/api/v5/market/history-candles"
+        method = 'GET'
+        params = {
+            "instId": instId,
+            "after": after,
+            "before": before,
+            "bar": interval,
+            "limit": limit
+        }
+        
+        requestPath = f"{endpoint}?{urlencode(params)}"
+        url = f"{_BASE_URL}{requestPath}"
+
+        # 生成签名
+        timestamp = str(int(time.time()))
+        signature = OKXAPI_Async_Wrapper.__generate_signature(_SECRET_KEY, timestamp, method, requestPath)
+        return await OKXAPI_Async_Wrapper.__http_request(url, timestamp, signature, method)
 
     @staticmethod
     async def get_account_balance_async(ccy = ''):

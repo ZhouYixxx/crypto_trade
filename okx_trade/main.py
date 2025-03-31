@@ -3,6 +3,7 @@
 # import time
 import asyncio
 import common_helper
+import strategies.rumi as stgy1
 from crypto_trader import crypto_trader
 
 
@@ -16,27 +17,40 @@ from crypto_trader import crypto_trader
 # Auth_163 = "YMbXMY87PuJmFbZ2"
 
 async def main():
-    config = common_helper.Util.load_config()
+    rumi = stgy1.rumi("BTC-USDT-SWAP")
+    await rumi.backtest()
+    # config = common_helper.Util.load_config()
     
-    btc_config = config.symbols["BTC-USDT-SWAP"]
-    btc_trader = crypto_trader(btc_config, config.email, config.indicators.bollinger_bands, config.common)
+    # btc_config = config.symbols["BTC-USDT-SWAP"]
+    # btc_trader = crypto_trader(btc_config, config.email, config.indicators.bollinger_bands, config.common)
 
-    eth_config = config.symbols["ETH-USDT-SWAP"]
-    eth_trader = crypto_trader(eth_config, config.email, config.indicators.bollinger_bands, config.common)
+    # eth_config = config.symbols["ETH-USDT-SWAP"]
+    # eth_trader = crypto_trader(eth_config, config.email, config.indicators.bollinger_bands, config.common)
 
-    sol_config = config.symbols["SOL-USDT-SWAP"]
-    sol_trader = crypto_trader(sol_config, config.email, config.indicators.bollinger_bands, config.common)
+    # sol_config = config.symbols["SOL-USDT-SWAP"]
+    # sol_trader = crypto_trader(sol_config, config.email, config.indicators.bollinger_bands, config.common)
 
-    pnut_config = config.symbols["PNUT-USDT-SWAP"]
-    pnut_trader = crypto_trader(pnut_config, config.email, config.indicators.bollinger_bands, config.common)
+    # pnut_config = config.symbols["PNUT-USDT-SWAP"]
+    # pnut_trader = crypto_trader(pnut_config, config.email, config.indicators.bollinger_bands, config.common)
 
-    await asyncio.gather(
-        # 每个trader之间延迟 5秒 启动
-        run_trader_with_delay(btc_trader, 0),
-        run_trader_with_delay(eth_trader, 5),
-        run_trader_with_delay(sol_trader, 10),
-        run_trader_with_delay(pnut_trader, 15),
-    )
+    # trader_list = []
+    # for inst in config.symbols.keys():
+    #     inst_config = config.symbols[inst]
+    #     inst_trader = crypto_trader(inst_config, config.email, config.indicators.bollinger_bands, config.common)
+    #     trader_list.append(inst_trader)
+    
+    # tasks = []
+    # for i, trader in enumerate(trader_list):
+    #     tasks.append(run_trader_with_delay(trader, i * 5))
+    # await asyncio.gather(*tasks)
+
+    # await asyncio.gather(
+    #     # 每个trader之间延迟 5秒 启动
+    #     run_trader_with_delay(btc_trader, 0),
+    #     run_trader_with_delay(eth_trader, 5),
+    #     run_trader_with_delay(sol_trader, 10),
+    #     run_trader_with_delay(pnut_trader, 15),
+    # )
 
 async def run_trader_with_delay(trader:crypto_trader, delay:int):
     await asyncio.sleep(delay)
