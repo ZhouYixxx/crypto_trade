@@ -43,7 +43,7 @@ class OKXAPI_Async_Wrapper:
     @staticmethod
     async def get_history_candles_async(instId, after, before, interval, limit = 100):
         """
-        获取K线数据
+        获取历史K线数据
         """
 
         endpoint = "/api/v5/market/history-candles"
@@ -63,6 +63,26 @@ class OKXAPI_Async_Wrapper:
         timestamp = str(int(time.time()))
         signature = OKXAPI_Async_Wrapper.__generate_signature(_SECRET_KEY, timestamp, method, requestPath)
         return await OKXAPI_Async_Wrapper.__http_request(url, timestamp, signature, method)
+
+    @staticmethod
+    async def get_tickers_async(instType, uly = '', instFamily = ''):
+        """
+        获取所有产品行情信息
+        """
+
+        endpoint = "/api/v5/market/tickers"
+        method = 'GET'
+        params = {
+            "instType": instType,
+            "uly": uly,
+            "instFamily": instFamily
+        }
+        
+        requestPath = f"{endpoint}?{urlencode(params)}"
+        url = f"{_BASE_URL}{requestPath}"
+
+        # 公共接口无需签名
+        return await OKXAPI_Async_Wrapper.__http_request(url, "", "", method)
 
     @staticmethod
     async def get_account_balance_async(ccy = ''):
@@ -130,14 +150,16 @@ class OKXAPI_Async_Wrapper:
     
 
     async def __http_request(url, timestamp, signature, method):
-        headers = {
-            "OK-ACCESS-KEY": _API_KEY,
-            "OK-ACCESS-SIGN": signature,
-            "OK-ACCESS-TIMESTAMP": timestamp,
-            "OK-ACCESS-PASSPHRASE": _PASSPHRASE,
-            "Content-Type": "application/json"
-        }
-
+        if signature:
+            headers = {
+                "OK-ACCESS-KEY": _API_KEY,
+                "OK-ACCESS-SIGN": signature,
+                "OK-ACCESS-TIMESTAMP": timestamp,
+                "OK-ACCESS-PASSPHRASE": _PASSPHRASE,
+                "Content-Type": "application/json"
+            }
+        else:
+            headers = {}
         async with aiohttp.ClientSession() as session:
             if method == 'GET':
                 request_func = session.get

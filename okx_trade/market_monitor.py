@@ -98,7 +98,7 @@ class market_monitor:
             return
         response = await OKXAPI_Async_Wrapper.get_candlesticks_async(instId=self.inst_id, interval="1D", limit=180)
         if response is None or response['code'] != '0':
-            self.logger.warn("Failed to get history ticker data ...")
+            self.logger.warning("Failed to get history ticker data ...")
             return
         data = response['data']
         df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'volCcy', 'volCcyQuote', 'confirm'])
