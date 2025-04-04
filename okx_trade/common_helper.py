@@ -56,6 +56,9 @@ class Logger:
         return self.logger
 
 class Util:
+
+    splitline = "----------------------------------------------------------------------------------------------------"
+
     @staticmethod
     def send_email_outlook(sender_email:str, sender_password:str, smtp_server:str, smtp_port:int, receiver_emails:str, subject:str, body:str, logger:logging.Logger):
         try:

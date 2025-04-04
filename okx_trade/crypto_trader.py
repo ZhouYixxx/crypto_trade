@@ -4,8 +4,9 @@ import pandas as pd
 import numpy as np
 from common_helper import Logger
 from common_helper import Util
-from market_monitor import market_monitor
+from market_monitor import bbands_monitor
 import dataclass
+import traceback
 
 class crypto_trader:
     def __init__(self, inst_config:dataclass.SymbolConfig, email_config:dataclass.EmailConfig, bb_config:dataclass.BollingerBandsConfig, 
@@ -23,9 +24,11 @@ class crypto_trader:
         self.stop_event = asyncio.Event()  
 
         self.logger = Logger(__name__).get_logger()
-        self.market_monitor = market_monitor(inst_config.instId, inst_config.K_interval, inst_config.bias)
+        self.market_monitor = bbands_monitor(inst_config.instId, inst_config.K_interval, inst_config.bias)
 
-    async def run(self):
+    async def run(self, delay:int = 0):
+            if delay > 0:
+                await asyncio.sleep(delay)
             self.logger.info(f"K线监控与自动交易模块启动, 当前币种：{self.inst_config.instId}, K线级别: {self.inst_config.K_interval}, 监控间隔: {self.common_config.interval}s ......")
             """运行交易逻辑"""
             while not self.stop_event.is_set():
@@ -52,9 +55,21 @@ class crypto_trader:
                         else:
                             self.log_flag += 1
                     # 使用wait_for来实现可中断的sleep. 默认情况下等待 interval 秒，调用stop()后立即退出
-                    await asyncio.wait_for(self.stop_event.wait(), timeout=self.common_config.interval)
+                    done, pending = await asyncio.wait(
+                        [
+                            asyncio.create_task(self.stop_event.wait()),
+                            asyncio.create_task(asyncio.sleep(self.common_config.interval)),
+                        ],
+                        return_when=asyncio.FIRST_COMPLETED,
+                    )
+                    for task in pending:
+                        task.cancel()
+                    # try:
+                    #     await asyncio.wait_for(self.stop_event.wait(), timeout=self.common_config.interval)
+                    # except asyncio.TimeoutError:
+                    #     pass
                 except Exception as e:
-                    self.logger.error(f"Error: {e}")
+                    self.logger.error(f"Error: {traceback.format_exc()}")
                     await asyncio.sleep(5)    
     def stop(self):
         print(f"停止监控币种 {self.inst_config} ...")

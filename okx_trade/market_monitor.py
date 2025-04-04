@@ -1,26 +1,21 @@
-# import okx.MarketData as MarketData
-# import requests
-# import time
 import pandas as pd
 import numpy as np
 import talib
 from okx_api_async import OKXAPI_Async_Wrapper 
 import datetime as dt
-
-# import asyncio
-
-# import okx.Account as Account
-# import okx.Funding as Funding
-# import okx.PublicData as Public
-# import okx.Trade as Trade
-# import okx.TradingData as TradingData
-# import okx.Status as Status
-# import json
 from common_helper import Logger
 from common_helper import Util
 
+# FLAG = "0"  # live trading: 0, demo trading: 1
+# # 布林带参数
+# LENGTH = 20  # 布林带周期
+# MULTIPLIER = 2  # 布林带倍数
+# INST_ID = 'BTC-USDT-SWAP'  # 交易对
+# INTERVAL = '4H'  # K线周期，例如 4小时
+# Bias = 0.5 # 偏置，理解为价格突破上轨后，还要再上涨0.5个标准差才能触发下单或邮件通知
 
-class market_monitor:
+class bbands_monitor:
+    """监控价格是否超出布林带"""
     def __init__(self, inst_id:str, interval:str, bias:float, bb_length:int = 20, multipier:int = 2):
         self.inst_id = inst_id
         self.interval = interval
@@ -108,4 +103,3 @@ class market_monitor:
         df = df.sort_values(['close', 'timestamp'], ascending=[True, False]) #按收盘价升序排列，后按时间降序排列
         self.inst_ticker_his = df
         # ticker = df.loc[df['close'] >= some_value]
-
