@@ -32,6 +32,7 @@ class EmailConfig:
     smtp_port: int
     password: str
     auth_163: str
+    feishu_webhook:str
 
 @dataclass
 class CommonConfig:

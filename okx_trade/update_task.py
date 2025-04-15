@@ -18,7 +18,7 @@ class HotSymbolUpdater:
         self,
         config:dataclass.Config,
         initial_hot_symbols: List[str],
-        update_interval_minutes: int = 60,
+        update_interval_minutes: int = 240,
     ):
         self.config:dataclass.Config = config
         self.hot_symbols = initial_hot_symbols  # 当前热门币种
@@ -67,7 +67,9 @@ class HotSymbolUpdater:
             try:
                 new_hot_list = await self.get_hot_symbols()
                 new_top_symbols = {item[0] for item in new_hot_list}
-                self.logger.info(f"\n当前TOP5币种:  {",".join(new_top_symbols)}")
+
+                self.logger.newline(2)
+                self.logger.info(f"当前TOP5币种:  {",".join(new_top_symbols)}")
                 # 1. 停止不再热门的 trader
                 to_stop = set(self.active_traders.keys()) - set(new_top_symbols)
                 for symbol in to_stop:
@@ -90,6 +92,7 @@ class HotSymbolUpdater:
 
                 self.hot_symbols = new_top_symbols
             except Exception:
+                self.logger.newline()
                 self.logger.error(f"[HotSymbolUpdater] 运行失败: {traceback.format_exc()}")
             await asyncio.sleep(self.update_interval)
 
@@ -120,7 +123,7 @@ class HotSymbolUpdater:
             task.cancel()
         self.tasks.clear()
 
-    async def get_hot_symbols(self, count:int = 5) -> List[str]:
+    async def get_hot_symbols(self, count:int = 3) -> List[str]:
         """获取当前热门Top N币种列表"""
         response = await OKXAPI_Async_Wrapper.get_tickers_async(instType='SWAP')
         if response['code'] == '0':

@@ -69,6 +69,7 @@ class crypto_trader:
                     # except asyncio.TimeoutError:
                     #     pass
                 except Exception as e:
+                    self.logger.newline()
                     self.logger.error(f"Error: {traceback.format_exc()}")
                     await asyncio.sleep(5)    
     def stop(self):

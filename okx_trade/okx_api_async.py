@@ -1,10 +1,13 @@
 import aiohttp
+import asyncio
 import time
 import hmac
 import base64
 from urllib.parse import urlencode
 from common_helper import Logger
 from common_helper import Util
+import datetime as dt
+import re
 
 
 logger = Logger(__name__).get_logger()
@@ -40,8 +43,72 @@ class OKXAPI_Async_Wrapper:
         return await OKXAPI_Async_Wrapper.__http_request(url, timestamp, signature, method)
 
 
+
     @staticmethod
-    async def get_history_candles_async(instId, after, before, interval, limit = 100):
+    async def get_history_candles_async(instId, interval, start="", end=""):
+        """获取从before到after这一段时间内的历史行情K线数据
+        Args:
+            instId (_type_): 币种
+            interval (_type_): K线级别
+            after (str, optional): 结束时间(不包括本身), 例如 "2024-05-01 12:30:00". Defaults to "".
+            before (str, optional): 开始时间(不包括本身). 例如 "2024-05-01 12:30:00". Defaults to "".
+
+        Returns:
+            {
+                "code":"0",
+                "msg":"",
+                "data":[
+                [
+                    "1597026383085",
+                    "3.721",
+                    "3.743",
+                    "3.677",
+                    "3.708",
+                    "8422410",
+                    "22698348.04828491",
+                    "12698348.04828491",
+                    "1"
+                ],
+                [...]]
+            }
+        """
+        if len(start) == 10:  # 纯日期
+            start += " 00:00:00"
+        if len(end) == 10:  # 纯日期
+            end += " 00:00:00"
+        start_ts:int = round(dt.datetime.strptime(start, "%Y-%m-%d %H:%M:%S").timestamp()) * 1000 if start != "" else 0 
+        end_ts:int = round(dt.datetime.strptime(end, "%Y-%m-%d %H:%M:%S").timestamp()) * 1000 if end != "" else round(dt.datetime.timestamp(dt.datetime.now()))* 1000 
+        end = f"{end_ts}"
+        start = f"{start_ts}"
+        unit = Util.str2mins(interval)
+        count = round((end_ts - start_ts) / (unit * 60 * 1000))
+        if count < 100:
+            return await OKXAPI_Async_Wrapper.__get_history_candles_internal(instId, interval, end, start, limit="100")
+        merged_data = []
+        while count > 0:
+            response = (await OKXAPI_Async_Wrapper.__get_history_candles_internal(instId=instId, after=end, before="", interval=interval, limit="100") 
+                        if count > 100 else 
+                        await OKXAPI_Async_Wrapper.__get_history_candles_internal(instId=instId, after=end, before=start, interval=interval, limit=""))
+            if response is None or response["code"] != "0":
+                merged_resp = {
+                    "code": response["code"],
+                    "msg": response["msg"],
+                    "data": []
+                }
+                return merged_resp
+            end = response["data"][-1][0]
+            merged_data.extend(response["data"])
+            count -= 100
+            await asyncio.sleep(0.1) # OKX对接口有限流
+        merged_resp = {
+            "code": "0",
+            "msg": "",
+            "data": merged_data
+        }
+        return merged_resp
+
+    @staticmethod
+    async def __get_history_candles_internal(instId, interval, after="", before="", limit = "100"):
         """
         获取历史K线数据
         """

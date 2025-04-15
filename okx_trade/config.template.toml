@@ -38,6 +38,7 @@ smtp_server = "smtp.163.com"
 smtp_port = 465
 password = "your_email_password"
 auth_163 = "your auth code for 163 mailbox"
+feishu_webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxx"
 
 [common]  
 interval = 60  # 监控间隔（秒）
