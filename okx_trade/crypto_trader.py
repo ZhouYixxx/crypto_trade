@@ -7,6 +7,8 @@ from common_helper import Util
 from market_monitor import market_data_monitor
 import dataclass
 import traceback
+from globals import global_instance
+
 
 class crypto_trader:
     def __init__(self, inst_config:dataclass.SymbolConfig, email_config:dataclass.EmailConfig, bb_config:dataclass.BollingerBandsConfig, 
@@ -34,8 +36,8 @@ class crypto_trader:
             while not self.stop_event.is_set():
                 try:
                     result = await self.market_monitor.price_triggered()
-                    last_send_time = Util.read_last_send_time(self.inst_config.instId)
-                    #隔2小时才重复提醒
+                    last_send_time = global_instance.inst_update_dict.get(self.inst_config.instId)
+                    #隔4小时才重复提醒
                     can_send_new = last_send_time is None or (dt.datetime.now() - last_send_time) > dt.timedelta(hours=4)
                     if result[0] == True and can_send_new:
                     # todo: 下单
@@ -44,7 +46,7 @@ class crypto_trader:
                         #                                 self.email_config.to_email, f"{self.inst_config.instId} 价格预警", msg, self.logger)
                         success = Util.send_feishu_message(self.email_config.feishu_webhook, msg, self.logger)
                         if success:
-                            Util.update_last_send_time(self.inst_config.instId)
+                            global_instance.inst_update_dict.update(self.inst_config.instId, dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                     # if await self.should_trade(price):
                     #     order = await self.order_manager.place_order(price)
                     #     if order:

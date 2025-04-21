@@ -14,6 +14,9 @@ import aiohttp
 import traceback
 import numpy as np
 import pandas as pd
+import threading
+from types import MappingProxyType
+
 
 class Logger:
     _logger_instance = None
@@ -162,29 +165,6 @@ class Util:
             common=common_config
         )
     
-
-    def read_last_send_time(instid, filename='last_send_time.json'):
-        try:
-            with open(filename, 'r') as f:
-                data = json.load(f)
-                return datetime.strptime(data[instid], "%Y-%m-%d %H:%M:%S")
-        except (FileNotFoundError, KeyError):
-            return None
-
-    def update_last_send_time(instid, filename='last_send_time.json'):
-        try:
-            with open(filename, 'r+') as f:
-                data = json.load(f)
-                data[instid] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                f.seek(0)  
-                json.dump(data, f, indent=4)
-                f.truncate()  # 确保原有多余的内容被截断
-        except (FileNotFoundError, json.JSONDecodeError):
-            # 如果文件不存在或者格式错误，重新创建文件
-            data = {instid: datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-            with open(filename, 'w') as f:
-                json.dump(data, f, indent=4)
-    
     @staticmethod
     def price2str(price)->str:
         price = float(price)
@@ -261,3 +241,31 @@ class Util:
                 })
         
         return pd.DataFrame(result)
+
+
+
+class ImmutableViewDict:
+    """用于保存/更新 高频读取、低频更新的字典对象
+    """
+    def __init__(self):
+        self._data = {}
+        self._view = MappingProxyType(self._data)
+        self._lock = threading.Lock()
+    
+    def get(self, key):
+        # 无锁读取不可变视图
+        return self._view.get(key)
+    
+    def update(self, key, value, save_to_file:bool = True):
+        # 加锁更新
+        with self._lock:
+            self._data[key] = value
+            if save_to_file:
+                with open("last_send_time.json", 'w') as f:
+                    json.dump(self._data, f, indent=2)
+
+
+    def get_all(self):
+        # 无锁读取不可变视图
+        return self._view.items()
+

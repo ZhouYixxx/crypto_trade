@@ -15,14 +15,15 @@ import datetime as dt
 import pandas as pd
 import math
 import talib
+from globals import global_instance
 
 
 async def main():
     # rumi = stgy1.rumi("BTC-USDT-SWAP")
     # await rumi.backtest()
-    config = common_helper.Util.load_config()
+
     logger = common_helper.Logger(__name__).get_logger()
-    logger.info(f"币种配置信息系: {config.symbols}")
+    logger.info(f"币种配置信息系: {global_instance.config.symbols}")
     
     # region 测试用代码
     # resp = await common_helper.Util.send_feishu_message(webhook_url=config.email.feishu_webhook, message="这是测试消息 \n 换行", logger=logger)
@@ -76,10 +77,10 @@ async def main():
 
     logger.info("行情监控程序启动......")
     logger.newline()
-    
-    fixed_symbols = set(config.symbols.keys())
+
+    fixed_symbols = set(global_instance.config.symbols.keys())
     fixed_symbols.remove("default")
-    updater = HotSymbolUpdater(config, fixed_symbols)
+    updater = HotSymbolUpdater(global_instance.config, fixed_symbols)
 
     try:
         await updater.start()
