@@ -157,4 +157,4 @@ class HotSymbolUpdater:
             result = df_sorted.head(count)[['instId', 'rise24h', 'volUSD24h']].values.tolist()
             return result
         else:
-            return None
+            return []

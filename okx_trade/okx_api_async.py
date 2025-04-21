@@ -75,7 +75,7 @@ class OKXAPI_Async_Wrapper:
         if len(start) == 10:  # 纯日期
             start += " 00:00:00"
         if len(end) == 10:  # 纯日期
-            end += " 00:00:00"
+            end += " 23:59:59"
         start_ts:int = round(dt.datetime.strptime(start, "%Y-%m-%d %H:%M:%S").timestamp()) * 1000 if start != "" else 0 
         end_ts:int = round(dt.datetime.strptime(end, "%Y-%m-%d %H:%M:%S").timestamp()) * 1000 if end != "" else round(dt.datetime.timestamp(dt.datetime.now()))* 1000 
         end = f"{end_ts}"
@@ -99,7 +99,7 @@ class OKXAPI_Async_Wrapper:
             end = response["data"][-1][0]
             merged_data.extend(response["data"])
             count -= 100
-            await asyncio.sleep(0.1) # OKX对接口有限流
+            await asyncio.sleep(0.2) # OKX对接口有限流
         merged_resp = {
             "code": "0",
             "msg": "",

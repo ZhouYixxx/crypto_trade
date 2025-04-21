@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from common_helper import Logger
 from common_helper import Util
-from market_monitor import bbands_monitor
+from market_monitor import market_data_monitor
 import dataclass
 import traceback
 
@@ -24,7 +24,7 @@ class crypto_trader:
         self.stop_event = asyncio.Event()  
 
         self.logger = Logger(__name__).get_logger()
-        self.market_monitor = bbands_monitor(inst_config.instId, inst_config.K_interval, inst_config.bias)
+        self.market_monitor = market_data_monitor(inst_config.instId, inst_config.K_interval, inst_config.bias)
 
     async def run(self, delay:int = 0):
             if delay > 0:
@@ -35,12 +35,14 @@ class crypto_trader:
                 try:
                     result = await self.market_monitor.price_triggered()
                     last_send_time = Util.read_last_send_time(self.inst_config.instId)
-                    can_send_new = last_send_time is None or (dt.datetime.now() - last_send_time) > dt.timedelta(hours=1)
+                    #隔2小时才重复提醒
+                    can_send_new = last_send_time is None or (dt.datetime.now() - last_send_time) > dt.timedelta(hours=4)
                     if result[0] == True and can_send_new:
                     # todo: 下单
                         msg = result[4]
-                        success = Util.send_email_outlook(self.email_config.from_email, self.email_config.auth_163, self.email_config.smtp_server, self.email_config.smtp_port,
-                                                        self.email_config.to_email, f"{self.inst_config.instId} 价格预警", msg, self.logger)
+                        # success = Util.send_email_outlook(self.email_config.from_email, self.email_config.auth_163, self.email_config.smtp_server, self.email_config.smtp_port,
+                        #                                 self.email_config.to_email, f"{self.inst_config.instId} 价格预警", msg, self.logger)
+                        success = Util.send_feishu_message(self.email_config.feishu_webhook, msg, self.logger)
                         if success:
                             Util.update_last_send_time(self.inst_config.instId)
                     # if await self.should_trade(price):
@@ -71,7 +73,7 @@ class crypto_trader:
                 except Exception as e:
                     self.logger.newline()
                     self.logger.error(f"Error: {traceback.format_exc()}")
-                    await asyncio.sleep(5)    
+                    await asyncio.sleep(10)    
     def stop(self):
         print(f"停止监控币种 {self.inst_config} ...")
         self.stop_event.set()  # 通知 run() 退出

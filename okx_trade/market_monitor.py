@@ -14,7 +14,7 @@ from common_helper import Util
 # INTERVAL = '4H'  # K线周期，例如 4小时
 # Bias = 0.5 # 偏置，理解为价格突破上轨后，还要再上涨0.5个标准差才能触发下单或邮件通知
 
-class bbands_monitor:
+class market_data_monitor:
     """监控价格是否超出布林带"""
     def __init__(self, inst_id:str, interval:str, bias:float, bb_length:int = 20, multipier:int = 2):
         self.inst_id = inst_id
@@ -76,12 +76,12 @@ class bbands_monitor:
         triggerd = False
         delta = (upper_band - lower_band) / 4 * self.bias
         if latest_close > (upper_band + delta):
-            msg = f"{self.inst_id} 价格突破{self.interval} 布林带上轨! 最新价: {Util.price2str(latest_close)}, 上轨: {Util.price2str(upper_band)}"
+            msg = f"{self.inst_id} 价格突破{self.interval} 布林带上轨 {self.bias}倍标准差! 最新价: {Util.price2str(latest_close)}, 上轨: {Util.price2str(upper_band)}"
             triggerd = True
             self.logger.info(msg)
             return triggerd, "up", latest_close, upper_band, msg
         elif latest_close < (lower_band - delta):
-            msg = f"{self.inst_id} 价格跌破{self.interval} 布林带下轨! 最新价: {Util.price2str(latest_close)}, 下轨: {Util.price2str(lower_band)}"
+            msg = f"{self.inst_id} 价格跌破{self.interval} 布林带下轨 {self.bias}倍标准差! 最新价: {Util.price2str(latest_close)}, 下轨: {Util.price2str(lower_band)}"
             triggerd = True
             return triggerd, "down", latest_close, lower_band, msg
         return False, "", 0,0, ""

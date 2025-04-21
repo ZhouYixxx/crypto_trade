@@ -84,7 +84,7 @@ class Util:
 
 
     @staticmethod
-    async def send_feishu_message(webhook_url: str, message: str, logger:logging.Logger):
+    async def send_feishu_message(webhook_url: str, message: str, logger:logging.Logger)->bool:
         """使用 Webhook 发送飞书消息"""
         try:
             headers = {"Content-Type": "application/json"}
@@ -98,11 +98,16 @@ class Util:
                     headers=headers,
                     data=json.dumps(data)
                 ) as response:
-                    logger.info("发送飞书消息成功")
-                    return await response.json()
+                    resp = await response.json()
+                    if resp['StatusMessage'] == 'success':
+                        logger.info("发送飞书消息成功")
+                        return True
+                    else:
+                        logger.info(f"发送飞书消息失败: StatusMessage = {resp['StatusMessage']}, StatusCode = {resp['StatusCode']}")
+                        return False
         except Exception as e:
             logger.error(f"发送飞书消息失败: {traceback.format_exc()}")
-            return None
+            return False
 
     @staticmethod
     def load_config(file_path: str = 'config.toml') -> dataclass.Config:

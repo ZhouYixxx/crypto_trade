@@ -22,26 +22,28 @@ async def main():
     # await rumi.backtest()
     config = common_helper.Util.load_config()
     logger = common_helper.Logger(__name__).get_logger()
+    logger.info(f"币种配置信息系: {config.symbols}")
+    
+    # region 测试用代码
+    # resp = await common_helper.Util.send_feishu_message(webhook_url=config.email.feishu_webhook, message="这是测试消息 \n 换行", logger=logger)
+    
+    
+    # start = "1727740800000" #20241001
+    # end = "1743465600000" #20250401
+    # start = "2025-01-01"
+    # end = "2025-04-20"
 
-    # await common_helper.Util.send_feishu_message(webhook_url=config.email.feishu_webhook, message="这是测试消息 \n 换行")
-    start = "1727740800000" #20241001
-    end = "1743465600000" #20250401
-    start = "2025-01-01"
-    end = "2025-04-10"
+    # response = await OKXAPI_Async_Wrapper.get_history_candles_async(instId="MAGIC-USDT-SWAP", interval="1D", start=start, end=end)
+    # data = response['data']
+    # df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'volCcy', 'volCcyQuote', 'confirm'])
+    # # 转换数据类型
+    # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms',utc=True).map(lambda t: t.tz_convert('Asia/Hong_Kong'))  # OKX的时间戳通常是毫秒级, 转化UTC+8
+    # df = df.sort_values('timestamp', ascending=True)
+    # df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
 
-
-
-    response = await OKXAPI_Async_Wrapper.get_history_candles_async(instId="SOL-USDT-SWAP", interval="4H", start=start, end=end)
-    data = response['data']
-    df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'volCcy', 'volCcyQuote', 'confirm'])
-    # 转换数据类型
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms',utc=True).map(lambda t: t.tz_convert('Asia/Hong_Kong'))  # OKX的时间戳通常是毫秒级, 转化UTC+8
-    df = df.sort_values('timestamp', ascending=True)
-    df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
-
-    df = calculate_bollinger_bands(df)
-    res = bband_signal(df)
-    print(res.to_string())
+    # df = calculate_bollinger_bands(df)
+    # res = bband_signal(df=df, bias=2)
+    # print(res.to_string())
 
     # # 计算每日涨跌幅（正确的计算方式：当日收盘价对比前一日收盘价）
     # df['pct_change'] = df['close'].pct_change() * 100
@@ -69,7 +71,12 @@ async def main():
     # print(f"\n总共有 {len(orders)} 次触发下单")
     # print(orders.to_string(index=False))
 
+    # endregion
+
+
     logger.info("行情监控程序启动......")
+    logger.newline()
+    
     fixed_symbols = set(config.symbols.keys())
     fixed_symbols.remove("default")
     updater = HotSymbolUpdater(config, fixed_symbols)
@@ -108,6 +115,17 @@ async def main():
 
 
 def signal_order(df:pd.DataFrame, down_groups:pd.DataFrame, up_groups:pd.DataFrame):
+    """思路: 以下跌为例 
+        日线级别: 连续下跌超过至少3日, 总跌幅超过设定值(例如20%), 就择机开始做多.
+        1H级别: 计算RSV值, RSV2 <= 20 且出现RSV2与RSV12的金叉. 
+    Args:
+        df (pd.DataFrame): _description_
+        down_groups (pd.DataFrame): _description_
+        up_groups (pd.DataFrame): _description_
+
+    Returns:
+        _type_: _description_
+    """
     dec = 0.225
     result = []
     for index, row in down_groups.iterrows():
@@ -196,9 +214,8 @@ def calculate_bollinger_bands(df, length = 20, multiplier = 2):
     df['lower'] = lower
     return df
 
-def bband_signal(df:pd.DataFrame)->pd.DataFrame:
+def bband_signal(df:pd.DataFrame, bias:float = 2)->pd.DataFrame:
     result = []
-    bias = 1.75
     for index, df_row in df.iterrows():
         close = df_row['close'] # 最新收盘价
         high = df_row['high'] 
