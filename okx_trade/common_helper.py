@@ -3,7 +3,7 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 import toml
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, time
 import types
 import smtplib
 from email.mime.text import MIMEText
@@ -116,14 +116,25 @@ class Util:
     def load_config(file_path: str = 'config.toml') -> dataclass.Config:
         with open(file_path, 'r', encoding='utf-8') as file:
             config_data = toml.load(file)
-
-        api_config = dataclass.ApiConfig(
-            key=config_data['api']['key'],
-            secret=config_data['api']['secret'],
-            passphase=config_data['api']['passphase'],
-            base_url=config_data['api']['base_url']
+        common_config = dataclass.CommonConfig(
+            interval=config_data['common']['interval'],
+            flag=config_data['common']['flag']
         )
-
+        if common_config.flag == '0': #实盘
+            api_config = dataclass.ApiConfig(
+                key=config_data['api']['key'],
+                secret=config_data['api']['secret'],
+                passphase=config_data['api']['passphase'],
+                base_url=config_data['api']['base_url']
+            )
+        else:
+            api_config = dataclass.ApiConfig(
+                key=config_data['demo_api']['key'],
+                secret=config_data['demo_api']['secret'],
+                passphase=config_data['demo_api']['passphase'],
+                base_url=config_data['demo_api']['base_url']
+            )
+        
         symbols_config = {}
         for symbol_name, symbol_data in config_data['symbols'].items():
             symbols_config[symbol_name] = dataclass.SymbolConfig(
@@ -150,11 +161,6 @@ class Util:
             password=config_data['email']['password'],
             auth_163=config_data['email']['auth_163'],
             feishu_webhook=config_data['email']['feishu_webhook']
-        )
-
-        common_config = dataclass.CommonConfig(
-            interval=config_data['common']['interval'],
-            flag=config_data['common']['flag']
         )
 
         return dataclass.Config(
@@ -251,6 +257,12 @@ class ImmutableViewDict:
         self._data = {}
         self._view = MappingProxyType(self._data)
         self._lock = threading.Lock()
+
+        # 启动定时清空线程
+        self._running = True
+        self._clear_thread = threading.Thread(target=self._daily_clear)
+        self._clear_thread.daemon = True
+        self._clear_thread.start()
     
     def get(self, key):
         # 无锁读取不可变视图
@@ -261,11 +273,34 @@ class ImmutableViewDict:
         with self._lock:
             self._data[key] = value
             if save_to_file:
-                with open("last_send_time.json", 'w') as f:
-                    json.dump(self._data, f, indent=2)
+                self._save_to_file()
 
+    def _save_to_file(self):
+        """内部方法：保存字典到文件"""
+        with open(self.filename, 'w') as f:
+            json.dump(self._data, f, indent=2)
 
     def get_all(self):
         # 无锁读取不可变视图
         return self._view.items()
+    
+    def _daily_clear(self):
+        """每日定时清空字典的线程函数"""
+        while self._running:
+            now = datetime.now()
+            target_time = datetime(*map(int, self.clear_time.split(':')))
+            
+            # 计算到下次清空时间的秒数
+            target_datetime = datetime.combine(now.date(), target_time)
+            if now >= target_datetime:
+                target_datetime = datetime.combine(now.date() + timedelta(days=1), target_time)
+            
+            wait_seconds = (target_datetime - now).total_seconds()
+            time.sleep(wait_seconds)
+            
+            # 执行清空操作
+            with self._lock:
+                self._data.clear()
+                # 可选：清空后立即保存空字典到文件
+                self._save_to_file()
 

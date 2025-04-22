@@ -38,7 +38,8 @@ class crypto_trader:
                     result = await self.market_monitor.price_triggered()
                     last_send_time = global_instance.inst_update_dict.get(self.inst_config.instId)
                     #隔4小时才重复提醒
-                    can_send_new = last_send_time is None or (dt.datetime.now() - last_send_time) > dt.timedelta(hours=4)
+                    can_send_new = (last_send_time is None or 
+                                    (dt.datetime.now() - dt.datetime.strptime(last_send_time, "%Y-%m-%d %H:%M:%S")) > dt.timedelta(hours=4))
                     if result[0] == True and can_send_new:
                     # todo: 下单
                         msg = result[4]
