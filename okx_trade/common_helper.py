@@ -259,6 +259,7 @@ class ImmutableViewDict:
         self._lock = threading.Lock()
 
         # 启动定时清空线程
+        self.clear_time = "00:01"
         self._running = True
         self._clear_thread = threading.Thread(target=self._daily_clear)
         self._clear_thread.daemon = True
