@@ -123,7 +123,7 @@ class HotSymbolUpdater:
             task.cancel()
         self.tasks.clear()
 
-    async def get_hot_symbols(self, count:int = 3) -> List[str]:
+    async def get_hot_symbols(self, count:int = 5) -> List[str]:
         """获取当前热门Top N币种列表"""
         response = await OKXAPI_Async_Wrapper.get_tickers_async(instType='SWAP')
         if response['code'] == '0':
@@ -139,10 +139,10 @@ class HotSymbolUpdater:
             df['rise24h'] = (df['last'] - df['sodUtc8']) / df['sodUtc8']
             df['volUSD24h'] = df['volCcy24h'] * df['low24h'] 
 
-            # 2. 筛选条件：交易量 > 1000万美元 且 涨跌幅绝对值 > 5%
-            rise_min = 0.05 if dt.datetime.now().hour < 10 else 0.1
+            # 2. 筛选条件：交易量 > 500万美元 且 涨跌幅绝对值 > 10%
+            rise_min = 0.1
             df_filtered = df[
-                (df['volUSD24h'] > 10**7) & 
+                (df['volUSD24h'] > 5 * 10**6) & 
                 (df['rise24h'].abs() > rise_min)
             ].copy()
 
