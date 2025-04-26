@@ -1,12 +1,12 @@
-from crypto_trader import crypto_trader
+from quote_monitor import crypto_quote_monitor
 
 class MarketDataDispatcher:
     """市场行情消息分发
     """
     def __init__(self):
-        self.subscribers = set[crypto_trader]()
+        self.subscribers = set[crypto_quote_monitor]()
     
-    def subscribe(self, subscriber:crypto_trader):
+    def subscribe(self, subscriber:crypto_quote_monitor):
         """交易者订阅行情数据"""
         self.subscribers.add(subscriber)
     

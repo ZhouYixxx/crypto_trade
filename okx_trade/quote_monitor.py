@@ -1,0 +1,111 @@
+import asyncio
+import datetime as dt
+from typing import List
+import pandas as pd
+import numpy as np
+from common_helper import Logger
+from common_helper import Util
+import dataclass
+import traceback
+from globals import global_instance
+from okx_api_async import OKXAPI_Async_Wrapper
+from strategies import bbands_rsi
+
+class crypto_quote_monitor:
+    def __init__(self, inst_config:dataclass.SymbolConfig, email_config:dataclass.EmailConfig, bb_config:dataclass.BollingerBandsConfig, 
+                 common_config: dataclass.CommonConfig):
+        self.inst_config = inst_config
+        self.email_config = email_config
+        self.bb_config = bb_config
+        self.common_config = common_config
+        self.log_flag = 0 
+        # self.inst_id = inst_id
+        # self.exec_interval = exec_interval
+        # self.k_interval = k_interval
+        # self.flag = flag
+
+        self.stop_event = asyncio.Event()  
+
+        self.logger = Logger(__name__).get_logger()
+        self.bbands_rsi_strategy = bbands_rsi.bbands_rsi_strategy(inst_id=inst_config.instId, bb_interval=inst_config.K_interval, bias=inst_config.bias)
+
+    async def run(self, delay:int = 0):
+            if delay > 0:
+                await asyncio.sleep(delay)
+            self.logger.info(f"K线监控与自动交易模块启动, 当前币种：{self.inst_config.instId}, K线级别: {self.inst_config.K_interval}, 监控间隔: {self.common_config.wait_seconds}s ......")
+            """运行交易逻辑"""
+            while not self.stop_event.is_set():
+                try:
+                    # 获取最新的K线数据
+                    market_data = await self._get_candles()
+                    if market_data is None or len(market_data) == 0:
+                        await self._stoppable_wait()
+                        continue
+                    signal_msg = self.bbands_rsi_strategy.SignalRaise(df_list=market_data)
+                    if signal_msg is None or signal_msg.triggerd==False:
+                        await self._stoppable_wait()
+                        continue
+
+                    last_send_time = global_instance.inst_update_dict.get(self.inst_config.instId)
+                    #隔4小时才重复提醒
+                    can_send_new = (last_send_time is None or 
+                                    (dt.datetime.now() - dt.datetime.strptime(last_send_time, "%Y-%m-%d %H:%M:%S")) > dt.timedelta(hours=4))
+                    if signal_msg.triggerd == True and can_send_new:
+                        # todo: 下单
+                        # success2 = Util.send_email_outlook(self.email_config.from_email, self.email_config.auth_163, self.email_config.smtp_server, self.email_config.smtp_port,
+                        #                                  self.email_config.to_email, f"{self.inst_config.instId} 价格预警", msg, self.logger)
+                        success = await Util.send_feishu_message(self.email_config.feishu_webhook, signal_msg.content, self.logger)
+                        if success:
+                            global_instance.inst_update_dict.update(self.inst_config.instId, dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                    await self.stoppable_wait()
+                except Exception as e:
+                    self.logger.newline()
+                    self.logger.error(f"Error: {traceback.format_exc()}")
+                    await asyncio.sleep(10)    
+
+    async def _stoppable_wait(self):
+        # 使用wait_for来实现可中断的sleep. 默认情况下等待 interval 秒，调用stop()后立即退出
+        done, pending = await asyncio.wait(
+            [
+                asyncio.create_task(self.stop_event.wait()),
+                asyncio.create_task(asyncio.sleep(self.common_config.wait_seconds)),
+            ],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        for task in pending:
+            task.cancel()
+        
+        # 方法二：用try catch来实现可中断的sleep
+        # try:
+        #     await asyncio.wait_for(self.stop_event.wait(), timeout=self.common_config.interval)
+        # except asyncio.TimeoutError:
+        #     pass
+
+    # 获取K线数据
+    async def _get_candles(self, limit=50)->List[pd.DataFrame]:
+        df_list = []
+        for item in ["4H", "1D"]: #暂时只需要这两个级别的K线，后续有更多策略, 按需添加
+            # response = market_data_api.get_candlesticks(instId=INST_ID, bar=interval, limit=limit)
+            response = await OKXAPI_Async_Wrapper.get_candlesticks_async(instId=self.inst_config.instId, interval=item, limit=limit)
+            if response['code'] == '0':
+                data = response['data']
+                df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'volCcy', 'volCcyQuote', 'confirm'])
+                df['close'] = df['close'].astype(float)
+                df['timestamp'] = pd.to_datetime(df['timestamp'].astype(np.int64), unit='ms')
+                df.name = item
+                df_list.append(df)
+                await asyncio.sleep(0.2)  # 避免触发限流
+            else:
+                self.logger.error(f"获取K线数据失败, 当前币种: {self.inst_config.instId}, K线级别: {self.inst_config.K_interval}")
+        return df_list
+    
+    def stop(self):
+        print(f"停止监控币种 {self.inst_config} ...")
+        self.stop_event.set()  # 通知 run() 退出
+        self.logger = None
+        self.bbands_rsi_strategy = None
+        self.stop_event = None
+        self.inst_config = None
+        self.email_config = None
+        self.bb_config = None
+        self.common_config = None

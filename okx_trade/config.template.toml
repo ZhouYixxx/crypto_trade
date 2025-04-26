@@ -41,5 +41,5 @@ auth_163 = "your auth code for 163 mailbox"
 feishu_webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxx"
 
 [common]  
-interval = 60  # 监控间隔（秒）
+wait_seconds = 60  # 监控间隔（秒）
 flag = "0"  # live trading: 0, demo trading: 1

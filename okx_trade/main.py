@@ -5,7 +5,7 @@ import asyncio
 import copy
 import common_helper
 import strategies.rumi as stgy1
-from crypto_trader import crypto_trader
+from quote_monitor import crypto_quote_monitor
 from typing import Dict, List, Set
 from update_task import HotSymbolUpdater
 import traceback
@@ -31,10 +31,10 @@ async def main():
     
     # start = "1727740800000" #20241001
     # end = "1743465600000" #20250401
-    # start = "2025-01-01"
-    # end = "2025-04-20"
+    # start = "2024-01-01"
+    # end = "2025-04-21"
 
-    # response = await OKXAPI_Async_Wrapper.get_history_candles_async(instId="MAGIC-USDT-SWAP", interval="1D", start=start, end=end)
+    # response = await OKXAPI_Async_Wrapper.get_history_candles_async(instId="BTC-USDT-SWAP", interval="1D", start=start, end=end)
     # data = response['data']
     # df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'volCcy', 'volCcyQuote', 'confirm'])
     # # 转换数据类型
@@ -43,7 +43,7 @@ async def main():
     # df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
 
     # df = calculate_bollinger_bands(df)
-    # res = bband_signal(df=df, bias=2)
+    # res = bband_signal(df=df, bias=1.25)
     # print(res.to_string())
 
     # # 计算每日涨跌幅（正确的计算方式：当日收盘价对比前一日收盘价）
@@ -226,6 +226,9 @@ def bband_signal(df:pd.DataFrame, bias:float = 2)->pd.DataFrame:
         middle_band = df_row['middle']  # 最新中轨
         if math.isnan(upper_band):
             continue
+        date = df_row['timestamp'].strftime('%Y-%m-%d')
+        # if date == '2024-04-14':
+        #     msg = "test on"
         delta = (upper_band - middle_band) / 2
         if high >= upper_band + delta * bias:
             result.append({
@@ -239,7 +242,7 @@ def bband_signal(df:pd.DataFrame, bias:float = 2)->pd.DataFrame:
                 'open_price': lower_band - delta * bias,
                 'direction': '开仓做多'
             })
-    return pd.DataFrame(result).sort_values('open_date', ascending=True)
+    return pd.DataFrame() if result == [] else pd.DataFrame(result).sort_values('open_date', ascending=True)
         
 
 if __name__ == "__main__":

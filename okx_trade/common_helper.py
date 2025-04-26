@@ -3,7 +3,8 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 import toml
 import json
-from datetime import datetime, timedelta, time
+import time
+from datetime import datetime, timedelta, time as dt_time
 import types
 import smtplib
 from email.mime.text import MIMEText
@@ -117,7 +118,7 @@ class Util:
         with open(file_path, 'r', encoding='utf-8') as file:
             config_data = toml.load(file)
         common_config = dataclass.CommonConfig(
-            interval=config_data['common']['interval'],
+            wait_seconds=config_data['common']['wait_seconds'],
             flag=config_data['common']['flag']
         )
         if common_config.flag == '0': #实盘
@@ -174,14 +175,20 @@ class Util:
     @staticmethod
     def price2str(price)->str:
         price = float(price)
+        if price < 10**-5:
+            return f"{round(price, 9):.10f}"
+        if price < 10**-4:
+            return f"{round(price, 7):.10f}"
+        if price < 10**-3:
+            return f"{round(price, 5):.10f}"
         if price < 1:
-            return round(price, 4)
+            return f"{round(price, 4):.10f}"
         elif price < 100:
-            return round(price, 3)
+            return f"{round(price, 3):.10f}"
         elif price < 10000:
-            return round(price, 2)
+            return f"{round(price, 2):.10f}"
         else:
-            return round(price, 1)
+            return f"{round(price, 1):.10f}"
         
     
     @staticmethod
@@ -276,9 +283,9 @@ class ImmutableViewDict:
             if save_to_file:
                 self._save_to_file()
 
-    def _save_to_file(self):
+    def _save_to_file(self, filename='last_send_time.json'):
         """内部方法：保存字典到文件"""
-        with open(self.filename, 'w') as f:
+        with open(filename, 'w') as f:
             json.dump(self._data, f, indent=2)
 
     def get_all(self):
@@ -289,7 +296,7 @@ class ImmutableViewDict:
         """每日定时清空字典的线程函数"""
         while self._running:
             now = datetime.now()
-            target_time = datetime(*map(int, self.clear_time.split(':')))
+            target_time = dt_time(*map(int, self.clear_time.split(':')))
             
             # 计算到下次清空时间的秒数
             target_datetime = datetime.combine(now.date(), target_time)

@@ -36,7 +36,7 @@ class EmailConfig:
 
 @dataclass
 class CommonConfig:
-    interval: int
+    wait_seconds: int # 监控间隔, 单位: 秒
     flag: str
 
 @dataclass
@@ -46,3 +46,14 @@ class Config:
     indicators: IndicatorsConfig
     email: EmailConfig
     common: CommonConfig
+
+@dataclass
+class SignalMessage:
+    """由交易策略发送的消息
+    """
+    sender: str
+    content: str
+    instId: str 
+    price: float
+    direction: int # 行情方向, 1 = 上涨  0 = 下跌
+    triggerd: bool # 触发条件是否满足, True: 满足, False: 不满足
