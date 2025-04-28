@@ -12,12 +12,16 @@ from okx_api_async import OKXAPI_Async_Wrapper
 from strategies import bbands_rsi
 
 class crypto_quote_monitor:
-    def __init__(self, inst_config:dataclass.SymbolConfig, email_config:dataclass.EmailConfig, bb_config:dataclass.BollingerBandsConfig, 
-                 common_config: dataclass.CommonConfig):
+    def __init__(self, inst_config:dataclass.SymbolConfig, 
+                 email_config:dataclass.EmailConfig, 
+                 bb_config:dataclass.BollingerBandsConfig, 
+                 common_config: dataclass.CommonConfig,
+                 message_queue: asyncio.Queue):
         self.inst_config = inst_config
         self.email_config = email_config
         self.bb_config = bb_config
         self.common_config = common_config
+        self.message_queue = message_queue
         self.log_flag = 0 
         # self.inst_id = inst_id
         # self.exec_interval = exec_interval
@@ -51,12 +55,7 @@ class crypto_quote_monitor:
                     can_send_new = (last_send_time is None or 
                                     (dt.datetime.now() - dt.datetime.strptime(last_send_time, "%Y-%m-%d %H:%M:%S")) > dt.timedelta(hours=4))
                     if signal_msg.triggerd == True and can_send_new:
-                        # todo: 下单
-                        # success2 = Util.send_email_outlook(self.email_config.from_email, self.email_config.auth_163, self.email_config.smtp_server, self.email_config.smtp_port,
-                        #                                  self.email_config.to_email, f"{self.inst_config.instId} 价格预警", msg, self.logger)
-                        success = await Util.send_feishu_message(self.email_config.feishu_webhook, signal_msg.content, self.logger)
-                        if success:
-                            global_instance.inst_update_dict.update(self.inst_config.instId, dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                        await self.message_queue.put(signal_msg)
                     await self.stoppable_wait()
                 except Exception as e:
                     self.logger.newline()

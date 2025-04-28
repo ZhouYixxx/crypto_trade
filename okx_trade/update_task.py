@@ -18,11 +18,13 @@ class HotSymbolUpdater:
         self,
         config:dataclass.Config,
         initial_hot_symbols: List[str],
+        message_queue: asyncio.Queue,
         update_interval_minutes: int = 240,
     ):
         self.config:dataclass.Config = config
         self.hot_symbols = initial_hot_symbols  # 当前热门币种
         self.update_interval = update_interval_minutes * 60  # 转换为秒
+        self.message_queue = message_queue  # 消息队列
         self.active_quote_monitors: Dict[str, crypto_quote_monitor] = {}  # 当前活跃的 trader
         self.tasks: List[asyncio.Task] = []  # 所有运行中的任务
         self._update_task: asyncio.Task | None = None  # update_task 的任务句柄
@@ -55,6 +57,7 @@ class HotSymbolUpdater:
             self.config.email,
             self.config.indicators.bollinger_bands,
             self.config.common,
+            self.message_queue
         )
         task = asyncio.create_task(trader.run(delay)) #后台运行trader
         task.set_name(f"{symbol}_task")
