@@ -176,19 +176,19 @@ class Util:
     def price2str(price)->str:
         price = float(price)
         if price < 10**-5:
-            return f"{round(price, 9):.10f}"
+            return f"{round(price, 9):.9f}"
         if price < 10**-4:
-            return f"{round(price, 7):.10f}"
+            return f"{round(price, 7):.7f}"
         if price < 10**-3:
-            return f"{round(price, 5):.10f}"
+            return f"{round(price, 5):.5f}"
         if price < 1:
-            return f"{round(price, 4):.10f}"
+            return f"{round(price, 4):.4f}"
         elif price < 100:
-            return f"{round(price, 3):.10f}"
+            return f"{round(price, 3):.3f}"
         elif price < 10000:
-            return f"{round(price, 2):.10f}"
+            return f"{round(price, 2):.2f}"
         else:
-            return f"{round(price, 1):.10f}"
+            return f"{round(price, 1):.1f}"
         
     
     @staticmethod

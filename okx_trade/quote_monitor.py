@@ -9,7 +9,8 @@ import dataclass
 import traceback
 from globals import global_instance
 from okx_api_async import OKXAPI_Async_Wrapper
-from strategies import bbands_rsi
+from strategies import bbands_rsi_strategy
+from strategies import sequential_rising_strategy
 
 class crypto_quote_monitor:
     def __init__(self, inst_config:dataclass.SymbolConfig, 
@@ -31,7 +32,8 @@ class crypto_quote_monitor:
         self.stop_event = asyncio.Event()  
 
         self.logger = Logger(__name__).get_logger()
-        self.bbands_rsi_strategy = bbands_rsi.bbands_rsi_strategy(inst_id=inst_config.instId, bb_interval=inst_config.K_interval, bias=inst_config.bias)
+        self.bbands_rsi_strategy = bbands_rsi_strategy.bbands_rsi_strategy(inst_id=inst_config.instId, bb_interval=inst_config.K_interval, bias=inst_config.bias)
+        self.sequential_rising_strategy = sequential_rising_strategy.sequential_rising_strategy(inst_id=inst_config.instId)
 
     async def run(self, delay:int = 0):
             if delay > 0:
@@ -46,7 +48,8 @@ class crypto_quote_monitor:
                         await self._stoppable_wait()
                         continue
                     signal_msg = self.bbands_rsi_strategy.SignalRaise(df_list=market_data)
-                    if signal_msg is None or signal_msg.triggerd==False:
+                    signal_msg2 = self.sequential_rising_strategy.SignalRaise(df_list=market_data)
+                    if (signal_msg is None or signal_msg.triggerd==False) and (signal_msg2 is None or signal_msg2.triggerd==False):
                         await self._stoppable_wait()
                         continue
 
@@ -54,8 +57,10 @@ class crypto_quote_monitor:
                     #隔4小时才重复提醒
                     can_send_new = (last_send_time is None or 
                                     (dt.datetime.now() - dt.datetime.strptime(last_send_time, "%Y-%m-%d %H:%M:%S")) > dt.timedelta(hours=4))
-                    if signal_msg.triggerd == True and can_send_new:
+                    if signal_msg is not None and signal_msg.triggerd == True and can_send_new:
                         await self.message_queue.put(signal_msg)
+                    elif signal_msg2 is not None and signal_msg2.triggerd == True and can_send_new:
+                        await self.message_queue.put(signal_msg2)
                     await self.stoppable_wait()
                 except Exception as e:
                     self.logger.newline()
@@ -63,7 +68,8 @@ class crypto_quote_monitor:
                     await asyncio.sleep(10)    
 
     async def _stoppable_wait(self):
-        # 使用wait_for来实现可中断的sleep. 默认情况下等待 interval 秒，调用stop()后立即退出
+        """使用wait_for来实现可中断的sleep. 实现在调用stop()后立即退出
+        """
         done, pending = await asyncio.wait(
             [
                 asyncio.create_task(self.stop_event.wait()),

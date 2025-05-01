@@ -26,55 +26,6 @@ async def main():
     logger.info(f"币种配置信息系: {global_instance.config.symbols}")
     message_queue = asyncio.Queue()
 
-    # region 测试用代码
-    # resp = await common_helper.Util.send_feishu_message(webhook_url=config.email.feishu_webhook, message="这是测试消息 \n 换行", logger=logger)
-    
-    
-    # start = "1727740800000" #20241001
-    # end = "1743465600000" #20250401
-    # start = "2024-01-01"
-    # end = "2025-04-21"
-
-    # response = await OKXAPI_Async_Wrapper.get_history_candles_async(instId="BTC-USDT-SWAP", interval="1D", start=start, end=end)
-    # data = response['data']
-    # df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'volCcy', 'volCcyQuote', 'confirm'])
-    # # 转换数据类型
-    # df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms',utc=True).map(lambda t: t.tz_convert('Asia/Hong_Kong'))  # OKX的时间戳通常是毫秒级, 转化UTC+8
-    # df = df.sort_values('timestamp', ascending=True)
-    # df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
-
-    # df = calculate_bollinger_bands(df)
-    # res = bband_signal(df=df, bias=1.25)
-    # print(res.to_string())
-
-    # # 计算每日涨跌幅（正确的计算方式：当日收盘价对比前一日收盘价）
-    # df['pct_change'] = df['close'].pct_change() * 100
-
-    # # 标记涨跌状态 (1: 上涨, -1: 下跌, 0: 平盘)
-    # df['direction'] = 0
-    # df.loc[df['pct_change'] > 0, 'direction'] = 1
-    # df.loc[df['pct_change'] < 0, 'direction'] = -1
-    # min_days = 3
-    # # 统计连续下跌超过3天的组
-    # print(f"统计区间{start} ~~ {end}")
-    # down_groups = common_helper.Util.find_consecutive_groups(df=df, min_days=min_days, direction=-1)
-    # print(f"连续下跌超过{min_days}天的组:")
-    # print(down_groups.to_string(index=False))
-    # print(f"\n总共有 {len(down_groups)} 组连续下跌超过{min_days}天的K线")
-
-    # # 统计连续上涨超过3天的组
-    # up_groups = common_helper.Util.find_consecutive_groups(df=df, min_days=min_days, direction=1)
-    # print(f"\n连续上涨超过{min_days}天的组:")
-    # print(up_groups.to_string(index=False))
-    # print(f"\n总共有 {len(up_groups)} 组连续上涨超过{min_days}天的K线")
-
-    # orders = signal_order(df, down_groups, up_groups)
-
-    # print(f"\n总共有 {len(orders)} 次触发下单")
-    # print(orders.to_string(index=False))
-
-    # endregion
-
 
     logger.info("行情监控程序启动......")
     logger.newline()

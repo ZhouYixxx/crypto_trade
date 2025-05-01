@@ -54,6 +54,7 @@ class SignalMessage:
     sender: str
     content: str
     instId: str 
-    price: float
-    direction: int # 行情方向, 1 = 上涨  0 = 下跌
+    price: float # 当前价格
+    threshold_price: float # 触发条件的阈值
+    direction: int # 行情方向, 1 = 上涨  -1 = 下跌, 0 = 无信号
     triggerd: bool # 触发条件是否满足, True: 满足, False: 不满足
