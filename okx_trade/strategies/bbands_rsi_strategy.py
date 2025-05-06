@@ -52,6 +52,7 @@ class bbands_rsi_strategy():
             df_1D = [df for df in df_list if df.name == "1D"][0]  # 1DK线数据
             # 计算布林带
             df_1D = self._calculate_bollinger_bands(df_1D, self.bb_length, self.multipier)
+
             # step1: 监控布林带
             signal1 = self.__bband_monitor(df_1D)
             if signal1 == 0 or self.mode == 1:
@@ -71,7 +72,11 @@ class bbands_rsi_strategy():
 
     def _calculate_bollinger_bands(self, df, length, multiplier):
         """ 使用 TA-Lib 计算布林带, 时间降序排列 """
+        scale = 0
         close_prices = df['close'].values
+        if close_prices[0] < 10**-2:
+            scale = Util.find_scale(close_prices[0])
+        close_prices = df['close'].values * 10**scale # 价格数据 
         upper, middle, lower = talib.BBANDS(
             close_prices[::-1],  # 收盘价数据
             timeperiod=length,  # 布林带周期
@@ -79,16 +84,19 @@ class bbands_rsi_strategy():
             nbdevdn=multiplier,  # 下轨倍数
             matype=talib.MA_Type.SMA  # 使用简单移动平均线
         )
-        df['upper'] = upper[::-1] # 返回的结果以时间降序排列，即arr[0] 为最新价格，arr[-1]为最老价格
-        df['middle'] = middle[::-1]
-        df['lower'] = lower[::-1]
+        df['upper'] = upper[::-1] / 10**scale # 返回的结果以时间降序排列，即arr[0] 为最新价格，arr[-1]为最老价格
+        df['middle'] = middle[::-1] / 10**scale
+        df['lower'] = lower[::-1]  / 10**scale
         return df
-
 
 
     def __calculate_rsi(self, df:pd.DataFrame, n1:int = 3, n2:int = 12):
         """使用 TA-Lib 计算RSI, 时间降序排列 """
+        scale = 0
         close_prices = df['close'].values[::-1]
+        if close_prices[0] < 10**-3:
+            scale = Util.find_scale(close_prices[0])
+            close_prices = close_prices * 10**scale
         rsi1 = talib.RSI(
             close_prices,
             timeperiod=n1,
@@ -97,8 +105,8 @@ class bbands_rsi_strategy():
             close_prices,
             timeperiod=n2,
         )
-        df[f'rsi_{n1}'] = rsi1[::-1]
-        df[f'rsi_{n2}'] = rsi2[::-1]
+        df[f'rsi_{n1}'] = rsi1[::-1] / 10**scale 
+        df[f'rsi_{n2}'] = rsi2[::-1] / 10**scale
         return df
 
     def __bband_monitor(self, df_1D:pd.DataFrame) -> int:

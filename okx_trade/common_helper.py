@@ -1,5 +1,6 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
+import math
 import os
 import toml
 import json
@@ -189,7 +190,24 @@ class Util:
             return f"{round(price, 2):.2f}"
         else:
             return f"{round(price, 1):.1f}"
-        
+
+    [staticmethod]    
+    def find_scale(x):
+        """
+        找到最小的正整数 n, 使得 x * 10^n > 1
+        参数：
+            x: 一个非常小的小数
+        返回：
+            n: 最小正整数
+        """
+        if x <= 0:
+            raise ValueError("Input x must be positive")
+        if x >= 1:
+            return 0 
+        # 计算 n = ceil(-log10(x))
+        n = math.ceil(-math.log10(x))
+        return n
+
     
     @staticmethod
     def str2mins(str:str)->int:
