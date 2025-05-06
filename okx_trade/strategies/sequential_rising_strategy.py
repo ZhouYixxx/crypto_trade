@@ -37,8 +37,8 @@ class sequential_rising_strategy():
             如果触发信号, 则返回信号消息且triggerd = True, 否则返回None
         """
         try:
-            if self.last_signal_time is None or (dt.datetime.now() - self.last_signal_time) > dt.timedelta(hours=1):
-                return None
+            if self.last_signal_time is not None and ((dt.datetime.now() - self.last_signal_time) < dt.timedelta(hours=1)):
+                return None  # 如果上次信号触发时间在1小时内，则不再触发新的信号
             
             df = [df for df in df_list if df.name == "1D"][0]  # 1D K线数据
             # 转换数据类型

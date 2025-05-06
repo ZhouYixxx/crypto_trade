@@ -61,7 +61,7 @@ class crypto_quote_monitor:
                         await self.message_queue.put(signal_msg)
                     elif signal_msg2 is not None and signal_msg2.triggerd == True and can_send_new:
                         await self.message_queue.put(signal_msg2)
-                    await self.stoppable_wait()
+                    await self._stoppable_wait()
                 except Exception as e:
                     self.logger.newline()
                     self.logger.error(f"Error: {traceback.format_exc()}")
@@ -96,7 +96,7 @@ class crypto_quote_monitor:
                 data = response['data']
                 df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'volCcy', 'volCcyQuote', 'confirm'])
                 df['close'] = df['close'].astype(float)
-                df['timestamp'] = pd.to_datetime(df['timestamp'].astype(np.int64), unit='ms')
+                df['timestamp'] = pd.to_datetime(df['timestamp'].astype(np.int64), unit='ms', utc=True).map(lambda t: t.tz_convert('Asia/Hong_Kong'))  # 转化UTC+8
                 df.name = item
                 df_list.append(df)
                 await asyncio.sleep(0.2)  # 避免触发限流

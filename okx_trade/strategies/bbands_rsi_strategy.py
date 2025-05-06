@@ -52,14 +52,13 @@ class bbands_rsi_strategy():
             df_1D = [df for df in df_list if df.name == "1D"][0]  # 1DK线数据
             # 计算布林带
             df_1D = self._calculate_bollinger_bands(df_1D, self.bb_length, self.multipier)
-            # 计算RSI
-            df_4h = self.__calculate_rsi(df_4h, self.rsi1, self.rsi2)
-            
             # step1: 监控布林带
             signal1 = self.__bband_monitor(df_1D)
             if signal1 == 0 or self.mode == 1:
                 return None
 
+            # 计算RSI
+            df_4h = self.__calculate_rsi(df_4h, self.rsi1, self.rsi2)
             # step2: 监控RSI
             signal_msg = self.__rsi_monitor(direction=signal1, df_4H=df_4h)
             if signal_msg is not None and signal_msg.triggerd == True:
@@ -69,8 +68,9 @@ class bbands_rsi_strategy():
             self.logger.error(f"Error: {traceback.format_exc()}")
             return None
 
-    # 使用 TA-Lib 计算布林带
+
     def _calculate_bollinger_bands(self, df, length, multiplier):
+        """ 使用 TA-Lib 计算布林带, 时间降序排列 """
         close_prices = df['close'].values
         upper, middle, lower = talib.BBANDS(
             close_prices[::-1],  # 收盘价数据
@@ -85,8 +85,9 @@ class bbands_rsi_strategy():
         return df
 
 
-    # 使用 TA-Lib 计算RSI
+
     def __calculate_rsi(self, df:pd.DataFrame, n1:int = 3, n2:int = 12):
+        """使用 TA-Lib 计算RSI, 时间降序排列 """
         close_prices = df['close'].values[::-1]
         rsi1 = talib.RSI(
             close_prices,
@@ -113,11 +114,9 @@ class bbands_rsi_strategy():
         if self.mode == 1: # 布林带监控
             delta = (upper_band - lower_band) / 4 * self.bias
             if latest_close < (upper_band + delta) and latest_close > (lower_band - delta): #布林通道未能突破
-                rand = random.randint(0,100) # 随机数， 偶数则 logging, 降低logging频率
-                if rand & 1 == 0:
-                    msg = f"监控模式={self.mode}... {self.inst_id} 价格在{self.bb_interval} 布林带上轨和下轨突破区间之内, 当前价 = {Util.price2str(latest_close)}, 当前上轨 = {Util.price2str(upper_band)}, 上涨突破价格={Util.price2str(upper_band + delta)}, 当前下轨 = {Util.price2str(lower_band)}, 下跌突破价格={Util.price2str(lower_band - delta)}, bias={self.bias}"
-                    self.logger.info(msg)
-                    return 0
+                msg = f"监控模式={self.mode}... {self.inst_id} 价格在{self.bb_interval} 布林带上轨和下轨突破区间之内, 当前价 = {Util.price2str(latest_close)}, 当前上轨 = {Util.price2str(upper_band)}, 上涨突破价格={Util.price2str(upper_band + delta)}, 当前下轨 = {Util.price2str(lower_band)}, 下跌突破价格={Util.price2str(lower_band - delta)}, bias={self.bias}"
+                self.logger.info(msg)
+                return 0
             elif latest_close >= (upper_band + delta):
                 # 上涨突破高位，准备做空
                 msg = f"布林带突破！！ {self.inst_id}当前价格={Util.price2str(latest_close)}, 日线上涨突破布林通道上轨(={Util.price2str(upper_band)}) {self.bias}倍标准差！切换监控模式 = 2"
@@ -175,8 +174,8 @@ class bbands_rsi_strategy():
             # 下跌突破低位，准备做多
             rsi1_cur = df_4H[f'rsi_{self.rsi1}'].iloc[0]
             rsi2_cur = df_4H[f'rsi_{self.rsi2}'].iloc[0]
-            rsi1_prev = df_4H[f'rsi_{self.rsi1}'].iloc[-1]
-            rsi2_prev = df_4H[f'rsi_{self.rsi2}'].iloc[-1]
+            rsi1_prev = df_4H[f'rsi_{self.rsi1}'].iloc[1]
+            rsi2_prev = df_4H[f'rsi_{self.rsi2}'].iloc[1]
             if rsi1_cur >= rsi2_cur and rsi1_prev < rsi2_prev and rsi1_prev <= 15 and abs(rsi1_cur - rsi1_prev) >= 7:
                 msg = f"RSI金叉触发: 当前RSI{self.rsi1}: {rsi1_cur}, 当前RSI{self.rsi2}: {rsi2_cur}, 上一RSI{self.rsi2}: {rsi1_prev}, 上一RSI{self.rsi2}: {rsi2_prev}"
                 signal_tips = f"信号触发, sender = {self.name}！！ {self.inst_id}当前价格={Util.price2str(latest_close)}, 下跌突破布林通道且RSI低位金叉, 建议方向：做多！"
@@ -190,5 +189,7 @@ class bbands_rsi_strategy():
                     triggerd=triggerd,
                     direction=direction
                 )
+        msg = f"监控模式={self.mode}... RSI信号未触发: {self.inst_id}当前RSI{self.rsi1}: {rsi1_cur}, 当前RSI{self.rsi2}: {rsi2_cur}, 上一RSI{self.rsi1}: {rsi1_prev}, 上一RSI{self.rsi2}: {rsi2_prev}"
+        self.logger.info(msg)
         return None
 
