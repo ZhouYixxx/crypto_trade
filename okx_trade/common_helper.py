@@ -18,16 +18,18 @@ import numpy as np
 import pandas as pd
 import threading
 from types import MappingProxyType
-
+import os
+from pathlib import Path
 
 class Logger:
     _logger_instance = None
     _empty_line_lock = threading.Lock()
 
     def __init__(self, name, log_dir='logs', level=logging.INFO):
+        script_dir = Path(__file__).parent
+        log_dir = script_dir / log_dir
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
-
         if Logger._logger_instance is not None:
             # 如果logger实例已经创建过，直接返回已存在的logger
             self.logger = Logger._logger_instance
@@ -116,6 +118,10 @@ class Util:
 
     @staticmethod
     def load_config(file_path: str = 'config.toml') -> dataclass.Config:
+        script_dir = Path(__file__).parent
+        file_path = script_dir / file_path
+        file_path = Path(file_path).resolve()
+        print(f"Loading config from {file_path}")
         with open(file_path, 'r', encoding='utf-8') as file:
             config_data = toml.load(file)
         common_config = dataclass.CommonConfig(
