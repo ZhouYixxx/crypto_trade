@@ -140,7 +140,7 @@ class bbands_rsi_strategy():
 
         elif self.mode == 2: # 当前已经是rsi监控，布林带监控应放宽阈值，避免频繁切换
             delta = (upper_band - lower_band) / 4 * self.bias
-            delta = delta * 0.7 # 放宽阈值
+            delta = delta * 0.5 # 放宽阈值
             if latest_close < (upper_band + delta) and latest_close > (lower_band - delta): #放宽阈值后，布林通道未能突破，则切换回布林带监控
                 msg = f"监控模式={self.mode}...{self.inst_id} 价格已回落到{self.bb_interval} 布林带上轨和下轨突破区间之内, 切换监控模式 = 1. 当前价 = {Util.price2str(latest_close)}, 当前上轨 = {Util.price2str(upper_band)}, 上涨突破价格={Util.price2str(upper_band + delta)}, 当前下轨 = {Util.price2str(lower_band)}, 下跌突破价格={Util.price2str(lower_band - delta)}, bias={self.bias}"
                 self.logger.info(msg)
@@ -163,8 +163,8 @@ class bbands_rsi_strategy():
             # 上涨突破高位，准备做空
             rsi1_cur = df_4H[f'rsi_{self.rsi1}'].iloc[0]
             rsi2_cur = df_4H[f'rsi_{self.rsi2}'].iloc[0]
-            rsi1_prev = df_4H[f'rsi_{self.rsi1}'].iloc[-1]
-            rsi2_prev = df_4H[f'rsi_{self.rsi2}'].iloc[-1]
+            rsi1_prev = df_4H[f'rsi_{self.rsi1}'].iloc[1]
+            rsi2_prev = df_4H[f'rsi_{self.rsi2}'].iloc[1]
             if rsi1_cur <= rsi2_cur and rsi1_prev > rsi2_prev and rsi1_prev >= 90 and abs(rsi1_cur - rsi1_prev) >= 7:
                 msg = f"RSI死叉触发: 当前RSI{self.rsi1}: {rsi1_cur}, 当前RSI{self.rsi2}: {rsi2_cur}, 上一RSI{self.rsi2}: {rsi1_prev}, 上一RSI{self.rsi2}: {rsi2_prev}"
                 signal_tips = f"信号触发！！ sender = {self.name}! ! {self.inst_id}当前价格={Util.price2str(latest_close)}, 上涨突破布林通道且RSI高位死叉, 建议方向：做空！"

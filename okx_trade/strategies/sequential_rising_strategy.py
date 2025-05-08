@@ -70,6 +70,7 @@ class sequential_rising_strategy():
                     if seque_days >= self.sequential_days and abs(pct_total) >= self.chagne_pct:
                         trend = "上涨" if curr_pct > 0 else "下跌"
                         msg = f"\n 趋势信号触发！！ {self.inst_id}当前价格={latest_close}, 已经连续{trend}{seque_days}天, 累计{trend}幅度达到 {round(pct_total,2)}%,建议方向：{'做空' if trend == '上涨' else '做多'}！"
+                        self.logger.critical(msg)
                         self.last_signal_time = dt.datetime.now()  # 更新上次信号触发时间
                         return dataclass.SignalMessage(
                             sender=self.name,

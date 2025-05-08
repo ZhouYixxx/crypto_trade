@@ -27,6 +27,7 @@ class Logger:
 
     def __init__(self, name, log_dir='logs', level=logging.INFO):
         script_dir = Path(__file__).parent
+        self.DEBUG = False
         log_dir = script_dir / log_dir
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
@@ -53,6 +54,13 @@ class Logger:
 
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
+
+        if self.DEBUG:
+            # 控制台处理器
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(level)
+            console_handler.setFormatter(formatter)
+            self.logger.addHandler(console_handler)
 
         #用于输出空行
         def log_newline(self, lines=1):
