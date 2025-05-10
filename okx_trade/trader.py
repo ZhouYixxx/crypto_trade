@@ -14,11 +14,17 @@ from strategies import bbands_rsi_strategy
 class CryptoTrader:
     def __init__(self, name, message_queue, max_concurrent=4):
             self.name = name
-            self.message_queue = message_queue  
+            self.message_queue = message_queue
+            self.email_config = global_instance.config.email  
             self.running = True
             self.max_concurrent = max_concurrent
             self.semaphore = asyncio.Semaphore(max_concurrent)
             self.logger = Logger(__name__).get_logger()
+
+    async def start(self):
+        """启动交易逻辑"""
+        self.logger.info(f"交易模块启动, name = {self.name} ......")
+        await self.process_messages()
 
     async def process_messages(self):
         """异步从队列中消费消息"""

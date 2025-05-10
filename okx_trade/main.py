@@ -15,6 +15,7 @@ import datetime as dt
 import pandas as pd
 import math
 import talib
+from trader import CryptoTrader
 from globals import global_instance
 
 
@@ -33,14 +34,22 @@ async def main():
     fixed_symbols = set(global_instance.config.symbols.keys())
     fixed_symbols.remove("default")
     updater = HotSymbolUpdater(config=global_instance.config, initial_hot_symbols=fixed_symbols, message_queue=message_queue)
+    trader = CryptoTrader(name="trader", message_queue=message_queue)
 
     try:
-        await updater.start()
+        await asyncio.gather(
+            updater.start(),  # 启动更新任务
+            trader.start()  # 启动交易任务
+        )   
+        # await updater.start()
+        # await trader.start() 
     except Exception:
         logger.error(f"Error: {traceback.format_exc()}")
         await asyncio.sleep(3)
     finally:
-        await updater.stop() 
+        await updater.stop()
+        updater = None
+        trader.stop() 
 
     # btc_config = config.symbols["BTC-USDT-SWAP"]
     # btc_trader = crypto_trader(btc_config, config.email, config.indicators.bollinger_bands, config.common)

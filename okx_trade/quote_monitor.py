@@ -48,7 +48,8 @@ class crypto_quote_monitor:
                         await self._stoppable_wait()
                         continue
                     signal_msg = self.bbands_rsi_strategy.SignalRaise(df_list=market_data)
-                    signal_msg2 = self.sequential_rising_strategy.SignalRaise(df_list=market_data)
+                    # signal_msg2 = self.sequential_rising_strategy.SignalRaise(df_list=market_data)
+                    signal_msg2 = None
                     if (signal_msg is None or signal_msg.triggerd==False) and (signal_msg2 is None or signal_msg2.triggerd==False):
                         await self._stoppable_wait()
                         continue
