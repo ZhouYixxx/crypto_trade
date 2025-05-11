@@ -11,6 +11,7 @@ from globals import global_instance
 from okx_api_async import OKXAPI_Async_Wrapper
 from strategies import bbands_rsi_strategy
 from strategies import sequential_rising_strategy
+from strategies import rumi
 
 class crypto_quote_monitor:
     def __init__(self, inst_config:dataclass.SymbolConfig, 
@@ -22,6 +23,7 @@ class crypto_quote_monitor:
         self.email_config = email_config
         self.bb_config = bb_config
         self.common_config = common_config
+        self.wait_seconds = common_config.wait_seconds
         self.message_queue = message_queue
         self.log_flag = 0 
         # self.inst_id = inst_id
@@ -33,7 +35,8 @@ class crypto_quote_monitor:
 
         self.logger = Logger(__name__).get_logger()
         self.bbands_rsi_strategy = bbands_rsi_strategy.bbands_rsi_strategy(inst_id=inst_config.instId, bb_interval=inst_config.K_interval, bias=inst_config.bias)
-        self.sequential_rising_strategy = sequential_rising_strategy.sequential_rising_strategy(inst_id=inst_config.instId)
+        # self.sequential_rising_strategy = sequential_rising_strategy.sequential_rising_strategy(inst_id=inst_config.instId)
+        self.rumi_strategy = rumi.rumi(inst_id=inst_config.instId)
 
     async def run(self, delay:int = 0):
             if delay > 0:
@@ -48,7 +51,12 @@ class crypto_quote_monitor:
                         await self._stoppable_wait()
                         continue
                     signal_msg = self.bbands_rsi_strategy.SignalRaise(df_list=market_data)
-                    # signal_msg2 = self.sequential_rising_strategy.SignalRaise(df_list=market_data)
+                    new_mode = self.bbands_rsi_strategy.on_mode_changed()
+                    if new_mode == 1:
+                        self.wait_seconds = self.common_config.wait_seconds
+                    elif new_mode == 2:
+                        self.wait_seconds = min(15, self.common_config.wait_seconds)
+                    # signal_msg2 = self.rumi_strategy.SignalRaise(df_list=market_data)
                     signal_msg2 = None
                     if (signal_msg is None or signal_msg.triggerd==False) and (signal_msg2 is None or signal_msg2.triggerd==False):
                         await self._stoppable_wait()
@@ -74,7 +82,7 @@ class crypto_quote_monitor:
         done, pending = await asyncio.wait(
             [
                 asyncio.create_task(self.stop_event.wait()),
-                asyncio.create_task(asyncio.sleep(self.common_config.wait_seconds)),
+                asyncio.create_task(asyncio.sleep(self.wait_seconds)),
             ],
             return_when=asyncio.FIRST_COMPLETED,
         )
@@ -88,9 +96,9 @@ class crypto_quote_monitor:
         #     pass
 
     # 获取K线数据
-    async def _get_candles(self, limit=50)->List[pd.DataFrame]:
+    async def _get_candles(self, limit=100)->List[pd.DataFrame]:
         df_list = []
-        for item in ["4H", "1D"]: #暂时只需要这两个级别的K线，后续有更多策略, 按需添加
+        for item in ["15m","1H", "1D"]: #后续需要更多级别K线, 按需添加
             # response = market_data_api.get_candlesticks(instId=INST_ID, bar=interval, limit=limit)
             response = await OKXAPI_Async_Wrapper.get_candlesticks_async(instId=self.inst_config.instId, interval=item, limit=limit)
             if response['code'] == '0':
@@ -100,9 +108,9 @@ class crypto_quote_monitor:
                 df['timestamp'] = pd.to_datetime(df['timestamp'].astype(np.int64), unit='ms', utc=True).map(lambda t: t.tz_convert('Asia/Hong_Kong'))  # 转化UTC+8
                 df.name = item
                 df_list.append(df)
-                await asyncio.sleep(0.2)  # 避免触发限流
+                await asyncio.sleep(0.25)  # 避免触发限流
             else:
-                self.logger.error(f"获取K线数据失败, 当前币种: {self.inst_config.instId}, K线级别: {self.inst_config.K_interval}")
+                self.logger.error(f"获取K线数据失败, 当前币种: {self.inst_config.instId}, K线级别: {item}, 错误信息: {response['msg']}")
         return df_list
     
     def stop(self):
