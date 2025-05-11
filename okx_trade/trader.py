@@ -46,9 +46,10 @@ class CryptoTrader:
             # todo: 下单
             # success2 = Util.send_email_outlook(self.email_config.from_email, self.email_config.auth_163, self.email_config.smtp_server, self.email_config.smtp_port,
             #                                  self.email_config.to_email, f"{self.inst_config.instId} 价格预警", msg, self.logger)
+            loginfo = Util.save_to_file(file_path = "signal_message.log", content = message.content, logger = self.logger)
             success = await Util.send_feishu_message(self.email_config.feishu_webhook, f"{message.content} \nsernder = {message.sender}", self.logger)
             if success:
-                global_instance.inst_update_dict.update(self.inst_config.instId, dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                global_instance.inst_update_dict.update(message.instId, dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         except Exception:
             self.logger.error(f"Error: {traceback.format_exc()}")
             pass

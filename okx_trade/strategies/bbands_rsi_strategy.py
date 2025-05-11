@@ -52,13 +52,16 @@ class bbands_rsi_strategy():
             df_1D = [df for df in df_list if df.name == "1D"][0]  # 1DK线数据
             # 计算布林带
             df_1D = self._calculate_bollinger_bands(df_1D, self.bb_length, self.multipier)
+            # # 计算RSI
+            # df_4h = self.__calculate_rsi(df_4h, self.rsi1, self.rsi2)
+            # df_4h = self.__detect_rsi_divergence(df = df_4h, rsi_period=self.rsi1, rsi_overbought=90, rsi_oversold=15)
 
             # step1: 监控布林带
             signal1 = self.__bband_monitor(df_1D)
             if signal1 == 0 or self.mode == 1:
                 return None
 
-            # 计算RSI
+            # # 计算RSI
             df_4h = self.__calculate_rsi(df_4h, self.rsi1, self.rsi2)
             # step2: 监控RSI
             signal_msg = self.__rsi_monitor(direction=signal1, df_4H=df_4h)
@@ -165,9 +168,22 @@ class bbands_rsi_strategy():
             rsi2_cur = df_4H[f'rsi_{self.rsi2}'].iloc[0]
             rsi1_prev = df_4H[f'rsi_{self.rsi1}'].iloc[1]
             rsi2_prev = df_4H[f'rsi_{self.rsi2}'].iloc[1]
-            if rsi1_cur <= rsi2_cur and rsi1_prev > rsi2_prev and rsi1_prev >= 90 and abs(rsi1_cur - rsi1_prev) >= 7:
+            if rsi1_cur <= rsi2_cur and rsi1_prev > rsi2_prev and rsi1_prev >= 95 and abs(rsi1_cur - rsi1_prev) >= 5:
                 msg = f"RSI死叉触发: 当前RSI{self.rsi1}: {rsi1_cur}, 当前RSI{self.rsi2}: {rsi2_cur}, 上一RSI{self.rsi2}: {rsi1_prev}, 上一RSI{self.rsi2}: {rsi2_prev}"
                 signal_tips = f"信号触发！！ sender = {self.name}! ! {self.inst_id}当前价格={Util.price2str(latest_close)}, 上涨突破布林通道且RSI高位死叉, 建议方向：做空！"
+                triggerd = True
+                self.logger.critical(msg + "\n" + signal_tips)
+                return dataclass.SignalMessage(
+                    sender=self.name,
+                    content=signal_tips,
+                    instId=self.inst_id,
+                    price=latest_close,
+                    triggerd=triggerd,
+                    direction=direction
+                )
+            if rsi1_prev >= 95 and rsi1_cur < rsi1_prev and abs(rsi1_cur - rsi1_prev) >= 5:
+                msg = f"RSI大幅下滑触发: 当前RSI{self.rsi1}: {rsi1_cur}, 上一RSI{self.rsi2}: {rsi1_prev}"
+                signal_tips = f"信号触发！！ sender = {self.name}! ! {self.inst_id}当前价格={Util.price2str(latest_close)}, 上涨突破布林通道且RSI大幅回落, 建议方向：做空！"
                 triggerd = True
                 self.logger.critical(msg + "\n" + signal_tips)
                 return dataclass.SignalMessage(
@@ -184,9 +200,22 @@ class bbands_rsi_strategy():
             rsi2_cur = df_4H[f'rsi_{self.rsi2}'].iloc[0]
             rsi1_prev = df_4H[f'rsi_{self.rsi1}'].iloc[1]
             rsi2_prev = df_4H[f'rsi_{self.rsi2}'].iloc[1]
-            if rsi1_cur >= rsi2_cur and rsi1_prev < rsi2_prev and rsi1_prev <= 15 and abs(rsi1_cur - rsi1_prev) >= 7:
+            if rsi1_cur >= rsi2_cur and rsi1_prev < rsi2_prev and rsi1_prev <= 15 and abs(rsi1_cur - rsi1_prev) >= 5:
                 msg = f"RSI金叉触发: 当前RSI{self.rsi1}: {rsi1_cur}, 当前RSI{self.rsi2}: {rsi2_cur}, 上一RSI{self.rsi2}: {rsi1_prev}, 上一RSI{self.rsi2}: {rsi2_prev}"
                 signal_tips = f"信号触发, sender = {self.name}！！ {self.inst_id}当前价格={Util.price2str(latest_close)}, 下跌突破布林通道且RSI低位金叉, 建议方向：做多！"
+                triggerd = True
+                self.logger.critical(msg + "\n" + signal_tips)
+                return dataclass.SignalMessage(
+                    sender=self.name,
+                    content=signal_tips,
+                    instId=self.inst_id,
+                    price=latest_close,
+                    triggerd=triggerd,
+                    direction=direction
+                )
+            if rsi1_prev <= 10 and rsi1_cur > rsi1_prev and abs(rsi1_cur - rsi1_prev) >= 5:
+                msg = f"RSI大幅上扬触发: 当前RSI{self.rsi1}: {rsi1_cur}, 上一RSI{self.rsi2}: {rsi1_prev}"
+                signal_tips = f"信号触发！！ sender = {self.name}! ! {self.inst_id}当前价格={Util.price2str(latest_close)}, 下跌突破布林通道且RSI大幅回落, 建议方向：做多！"
                 triggerd = True
                 self.logger.critical(msg + "\n" + signal_tips)
                 return dataclass.SignalMessage(
@@ -201,3 +230,36 @@ class bbands_rsi_strategy():
         self.logger.info(msg)
         return None
 
+
+    def __detect_rsi_divergence(self, df:pd.DataFrame, rsi_period=3, lookback=5, rsi_overbought=70, rsi_oversold=30):
+        """ 检测RSI背离 \n
+        Args:
+            df (pd.DataFrame): 包含价格数据的DataFrame，必须包含'close'、'high'和'low'列
+            rsi_period (int): RSI计算周期
+            lookback (int): 用于检测背离的回溯周期
+            rsi_overbought (float): 超买阈值
+            rsi_oversold (float): 超卖阈值
+        Returns:
+            pd.DataFrame: 包含RSI和背离信号的DataFrame
+        """
+        df['RSI'] = talib.RSI(df['close'], timeperiod=rsi_period)
+        df['top_divergence'] = 0
+        df['bottom_divergence'] = 0
+        
+        if len(df) < lookback + 1:
+            return df
+        
+        for i in range(lookback, len(df)):
+            if (df['high'].iloc[i] > df['high'].iloc[i-lookback:i].max()):
+                prev_high_idx = df['high'].iloc[i-lookback:i].idxmax()
+                if (df['RSI'].iloc[i] < df['RSI'].iloc[prev_high_idx] and 
+                    df['RSI'].iloc[i] > rsi_overbought):
+                    df['top_divergence'].iloc[i] = 1
+            
+            if (df['low'].iloc[i] < df['low'].iloc[i-lookback:i].min()):
+                prev_low_idx = df['low'].iloc[i-lookback:i].idxmin()
+                if (df['RSI'].iloc[i] > df['RSI'].iloc[prev_low_idx] and 
+                    df['RSI'].iloc[i] < rsi_oversold):
+                    df['bottom_divergence'].iloc[i] = 1
+        
+        return df

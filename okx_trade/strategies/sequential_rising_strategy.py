@@ -30,6 +30,7 @@ class sequential_rising_strategy():
         self.sequential_interval = sequential_interval
         self.logger = Logger(__name__).get_logger()
         self.last_signal_time:dt.datetime = None # 上次信号触发时间
+        self.range = [] #记录最近30次的RSI计算结果
 
     def SignalRaise(self, df_list: List[pd.DataFrame]) -> dataclass.SignalMessage:
         """ 日线：价格突破布林带, 4小时K线: RSI金叉或死叉 \n

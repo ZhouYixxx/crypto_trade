@@ -129,7 +129,7 @@ class Util:
         script_dir = Path(__file__).parent
         file_path = script_dir / file_path
         file_path = Path(file_path).resolve()
-        print(f"Loading config from {file_path}")
+        #print(f"Loading config from {file_path}")
         with open(file_path, 'r', encoding='utf-8') as file:
             config_data = toml.load(file)
         common_config = dataclass.CommonConfig(
@@ -186,6 +186,30 @@ class Util:
             email=email_config,
             common=common_config
         )
+    
+    def save_to_file(file_path: str, content: str, logger:logging.Logger) -> bool:
+        """
+        线程安全地将字符串追加写入指定文件。如果文件不存在，则新建文件。
+        
+        参数:
+            file_path (str): 目标文件路径, 例如: "logs/example.log"
+            content (str): 要写入的字符串内容
+        
+        返回:
+            bool: 写入成功返回True，失败返回False
+        """
+        lock = threading.Lock()
+        try:
+            with lock: 
+                script_dir = Path(__file__).parent
+                file_path = script_dir / file_path
+                file_path = Path(file_path).resolve()
+                with open(file_path, 'a', encoding='utf-8') as file:
+                    file.write(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]" + content + '\n')  # 追加内容并换行
+            return True
+        except Exception as e:
+            logger.error(f"写入文件失败: {traceback.format_exc()}")
+            return False
     
     @staticmethod
     def price2str(price)->str:
@@ -316,8 +340,11 @@ class ImmutableViewDict:
                 self._save_to_file()
 
     def _save_to_file(self, filename='last_send_time.json'):
+        script_dir = Path(__file__).parent
+        file_path = script_dir / filename
+        file_path = Path(file_path).resolve()
         """内部方法：保存字典到文件"""
-        with open(filename, 'w') as f:
+        with open(file_path, 'w') as f:
             json.dump(self._data, f, indent=2)
 
     def get_all(self):
