@@ -55,7 +55,7 @@ class crypto_quote_monitor:
                     if new_mode == 1:
                         self.wait_seconds = self.common_config.wait_seconds
                     elif new_mode == 2:
-                        self.wait_seconds = min(15, self.common_config.wait_seconds)
+                        self.wait_seconds = min(10, self.common_config.wait_seconds)
                     # signal_msg2 = self.rumi_strategy.SignalRaise(df_list=market_data)
                     signal_msg2 = None
                     if (signal_msg is None or signal_msg.triggerd==False) and (signal_msg2 is None or signal_msg2.triggerd==False):

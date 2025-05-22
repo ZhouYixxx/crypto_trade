@@ -55,7 +55,7 @@ class bbands_rsi_strategy():
             # 计算布林带
             df_1D = self._calculate_bollinger_bands(df_1D, self.bb_length, self.multipier)
             # # 计算RSI
-            # df_4h = self.__calculate_rsi(df_4h, self.rsi1, self.rsi2)
+            df_1H = self.__calculate_rsi(df_1H, self.rsi1, self.rsi2)
             # df_4h = self.__detect_rsi_divergence(df = df_4h, rsi_period=self.rsi1, rsi_overbought=90, rsi_oversold=15)
 
             self.prev_mode = self.mode
@@ -64,7 +64,7 @@ class bbands_rsi_strategy():
             if signal1 == 0 or self.mode == 1:
                 return None
             # 计算RSI
-            df_1H = self.__calculate_rsi(df_1H, self.rsi1, self.rsi2)
+            # df_1H = self.__calculate_rsi(df_1H, self.rsi1, self.rsi2)
             # step2: 监控RSI
             signal_msg = self.__rsi_monitor(direction=signal1, df_1H=df_1H)
             if signal_msg is not None and signal_msg.triggerd == True:
@@ -116,10 +116,11 @@ class bbands_rsi_strategy():
         )
         df[f'rsi_{n1}'] = rsi1[::-1] / 10**scale 
         df[f'rsi_{n2}'] = rsi2[::-1] / 10**scale
-        if len(self.rsi_data) == 0:
-            self.rsi_data.extend(df[f'rsi_{n1}'].dropna())
-        else:
-            self.rsi_data.extend(df[f'rsi_{n1}'].iloc[0])
+        self.rsi_data.append(df[f'rsi_{n1}'].iloc[0])
+        # if len(self.rsi_data) == 0:
+        #     self.rsi_data.extend(rsi1[~np.isnan(rsi1)] / 10**scale)
+        # else:
+        #     self.rsi_data.append(df[f'rsi_{n1}'].iloc[0])
         return df
 
     def __bband_monitor(self, df_1D:pd.DataFrame) -> int:
@@ -269,12 +270,12 @@ class bbands_rsi_strategy():
         return None
 
 
-    def __rsi_trend(self, window=30, overbought=90, oversold=12)->str:
+    def __rsi_trend(self, window=20, overbought=90, oversold=12):
         """
         分析RSI数据, 判断价格趋势
         """
         if len(self.rsi_data) < window:
-            return "数据不足"
+            return "数据不足", 0
 
         rsi_array = np.array(self.rsi_data, dtype=float)
         rsi_ema = talib.EMA(rsi_array, timeperiod=window)
@@ -282,9 +283,9 @@ class bbands_rsi_strategy():
         avg_slope = np.mean(rsi_diff[-10:])
         latest_rsi = rsi_array[-1]
 
-        if latest_rsi >= overbought and avg_slope <= 0.1:
+        if latest_rsi >= overbought and avg_slope <= -0.15:
             return "做空", avg_slope
-        if latest_rsi <= oversold and avg_slope >= 0.1:
+        if latest_rsi <= oversold and avg_slope >= 0.15:
             return "做多", avg_slope
-        return "无趋势"
+        return "无趋势", 0
         
